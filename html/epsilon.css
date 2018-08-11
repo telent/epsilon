@@ -1,0 +1,25 @@
+body {
+    font-family: Roboto, sans-serif;
+}
+table.search-results tr td div {
+    height: 1.2em;
+    overflow: hidden;
+}
+table.search-results tr {
+    background-color: #eee;
+    margin-bottom: 1px;
+}
+
+td.authors {
+    width: 10em; 
+}
+td.subject {
+    width: 40em; 
+}
+td.when  {
+    width: 8em; 
+}
+span.tag {
+    display: inline-block; font-size: 80%; background-color: #ddd;
+    border-width:1px; border-color: #222;
+}
