@@ -20,6 +20,7 @@ td.when  {
     width: 8em; 
 }
 span.tag {
-    display: inline-block; font-size: 80%; background-color: #ddd;
-    border-width:1px; border-color: #222;
+    display: inline-block; font-size: 80%; background-color: #eee;
+    padding: 2px 4px; margin: 0.3em;
+    border-width: 1px; border-color: #222; border-style: solid;
 }

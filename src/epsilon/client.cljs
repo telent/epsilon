@@ -30,24 +30,20 @@
      :search-term ""
      :time-color "#f88"}))
 
-
-
-(rf/reg-event-db                ;; usage:  (dispatch [:time-color-change 34562])
-  :time-color-change            ;; dispatched when the user enters a new colour into the UI text field
-  (fn [db [_ new-color-value]]  ;; -db event handlers given 2 parameters:  current application state and event (a vector)
-    (assoc db :time-color new-color-value)))   ;; compute and return the new application state
-
 (rf/reg-event-fx
  :search-requested
  (fn [{:keys [db]} [_ term]]
-   {:db (assoc db :search-term term)
-    :http-xhrio {:method          :get
-                 :uri             "/search"
-                 :params 	  {:q term :limit 10}
-                 :format          (ajax/url-request-format)
-                 :response-format (ajax/json-response-format {:keywords? true})
-                 :on-success      [:search-result]
-                 :on-failure      [:search-error]}}))
+   {:db (-> db
+            (assoc :search-term term)
+            (dissoc :thread-id :thread :search-result))
+    :http-xhrio
+    {:method          :get
+     :uri             "/search"
+     :params 	  {:q term :limit 10}
+     :format          (ajax/url-request-format)
+     :response-format (ajax/json-response-format {:keywords? true})
+     :on-success      [:search-result]
+     :on-failure      [:search-error]}}))
 
 (rf/reg-event-db
  :search-result
@@ -93,16 +89,6 @@
 ;; -- Domino 4 - Query  -------------------------------------------------------
 
 (rf/reg-sub
-  :time
-  (fn [db _]     ;; db is current app state. 2nd unused param is query vector
-    (:time db))) ;; return a query computation over the application state
-
-(rf/reg-sub
-  :time-color
-  (fn [db _]
-    (:time-color db)))
-
-(rf/reg-sub
   :search-term
   (fn [db _]
     (:search-term db)))
@@ -120,44 +106,54 @@
 
 ;; -- Domino 5 - View Functions ----------------------------------------------
 
-(defn clock
-  []
-  [:div.example-clock
-   {:style {:color @(rf/subscribe [:time-color])}}
-   (-> @(rf/subscribe [:time])
-       .toTimeString
-       (str/split " ")
-       first)])
-
-(defn color-input
-  []
-  [:div.color-input
-   "Time color: "
-   [:input {:type "text"
-            :value @(rf/subscribe [:time-color])
-            :on-change #(rf/dispatch [:time-color-change (-> % .-target .-value)])}]])  ;; <---
-
 (defn search-term-input
   []
   [:div.search-term-input
    {:placeholder "Search messages"}
    [:input {:type "text"
             :value @(rf/subscribe [:search-term])
-            :on-change #(rf/dispatch [:search-requested (-> % .-target .-value)])}]])
+            :on-change
+            #(rf/dispatch [:search-requested (-> % .-target .-value)])
+            }]])
+
+(defn tags
+  []
+  [:ul.taglist
+   (map (fn [tag]
+          [:li
+           {:on-click #(rf/dispatch [:search-requested (str "tag:" tag)])}
+           tag])
+        ["inbox" "new" "spam"
+         "attachment"
+         "deleted"
+         "draft"
+         "fb"
+         "ham"
+         "inbox"
+         "new"
+         "refiled"
+         "replied"
+         "report"
+         "signed"
+         "spam"
+         "trash"
+         "unread"])])
+
 
 (defn search-result
   []
   (let [rs @(rf/subscribe [:search-result])]
     [:table.search-results
-     (map (fn [r]
-            [:tr
-             {:key (:thread r)
-              :on-click #(rf/dispatch [:view-thread-requested (:thread r)])}
-             [:td.authors [:div (:authors r)]]
-             [:td.subject [:div (:subject r)]]
-             [:td.when [:div (:date_relative r)]]
-             ])
-          rs)]))
+     [:tbody
+      (map (fn [r]
+             [:tr
+              {:key (:thread r)
+               :on-click #(rf/dispatch [:view-thread-requested (:thread r)])}
+              [:td.authors [:div (:authors r)]]
+              [:td.subject [:div (:subject r)]]
+              [:td.when [:div (:date_relative r)]]
+              ])
+           rs)]]))
 
 (defn thread-pane
   []
@@ -166,21 +162,20 @@
     [:div.message
      [:div.headers
       (map (fn [[k v]] [:div {:key k} [:b (name k)] v]) (:headers m))]
-     [:div (map (fn [tag] [:span.tag tag]) (:tags m))]
+     [:div (map (fn [tag] [:span.tag {:key tag} tag]) (:tags m))]
      [:div (pr-str (:body m))]]))
 
 
 (defn ui
   []
   [:div
-   [:h1 "Epsilon"]
-   [search-term-input]
-   [:hr]
-   [search-result]
-   [:hr]
-   [thread-pane]
-
-   ])
+   [:div {:id "search"}
+    [search-term-input]
+    [tags]]
+   [:div {:id "threads"}
+    [search-result]]
+   [:div {:id "thread"}
+    [thread-pane]]])
 
 ;; -- Entry Point -------------------------------------------------------------
 
@@ -188,6 +183,6 @@
   []
   (rf/dispatch-sync [:initialize])     ;; puts a value into application state
   (rf/dispatch-sync [:search-requested "hack"])
-  (rf/dispatch [:view-thread-requested (:thread r)])
+#_  (rf/dispatch [:view-thread-requested (:thread r)])
   (reagent/render [ui]              ;; mount the application's ui into '<div id="app" />'
                   (js/document.getElementById "app")))
