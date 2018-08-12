@@ -1,7 +1,32 @@
 body {
     font-family: Roboto, sans-serif;
+    font-size: 16px;
     overflow-x: hidden;
 }
+
+
+.search .taglist {
+    position: relative;
+    left: 0;
+    top: 0;
+}
+.search-term-input input {
+    font-size: 16px;
+    padding: 4px;
+}
+    
+.search .taglist ul {
+    position: absolute;
+    cursor: pointer;
+    background-color: white;
+    left: 0;
+    top: 0;
+    width: 80%;
+    height: auto;
+    z-index: 1001;
+}
+    
+
 table.search-results tr td div {
     height: 1.2em;
     overflow: hidden;
@@ -28,4 +53,19 @@ span.tag {
 
 .message .headers .header .name {
     font-weight: bold;
+}
+
+.message .headers {
+    border: 1px solid grey;
+    background-color: #ffdddd;
+    padding: 4px 2px;
+}
+
+.message .headers .header .name:after {
+    content: "   ";
+}
+
+.message-body pre {
+    font-size: 75%;
+    white-space: pre-wrap;
 }
