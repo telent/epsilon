@@ -26,9 +26,8 @@
 (rf/reg-event-db
   :initialize
   (fn [_ _]
-    {:time (js/Date.)
-     :search-term ""
-     :time-color "#f88"}))
+    {:search-term ""
+     }))
 
 (rf/reg-event-fx
  :search-requested
