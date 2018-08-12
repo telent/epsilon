@@ -1,5 +1,6 @@
 body {
     font-family: Roboto, sans-serif;
+    overflow-x: hidden;
 }
 table.search-results tr td div {
     height: 1.2em;
@@ -23,4 +24,8 @@ span.tag {
     display: inline-block; font-size: 80%; background-color: #eee;
     padding: 2px 4px; margin: 0.3em;
     border-width: 1px; border-color: #222; border-style: solid;
+}
+
+.message .headers .header .name {
+    font-weight: bold;
 }
