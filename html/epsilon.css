@@ -60,6 +60,13 @@ span.tag {
     background-color: #ffdddd;
     padding: 4px 2px;
 }
+.message .compact-headers {
+    position: sticky;
+    font-size: 80%;
+    top: 0;
+    height: 1em;
+    overflow-y: hidden;
+}
 
 .message .headers .header .name:after {
     content: "   ";

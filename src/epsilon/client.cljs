@@ -1,5 +1,6 @@
 (ns epsilon.client
   (:require [reagent.core :as reagent]
+            [clojure.string :as str]
             [ajax.core :as ajax :refer [GET POST]]
             [day8.re-frame.http-fx]
             [re-frame.core :as rf]
@@ -163,31 +164,58 @@
               ])
            rs)]]))
 
-(defmulti render-message-part (fn [m] (:content-type m)))
+(defmulti render-message-part (fn [message part] (:content-type part)))
 
-(defmethod render-message-part "multipart/alternative" [m]
-  (let [c (:content m)
+(defmethod render-message-part "multipart/alternative" [m p]
+  (let [c (:content p)
         plain (first (filter #(= (:content-type %) "text/plain") c))]
-    (render-message-part plain)))
+    (render-message-part m plain)))
 
-(defmethod render-message-part "multipart/mixed" [m]
-  (let [c (:content m)]
-    (map render-message-part c)))
+(defmethod render-message-part "multipart/mixed" [m p]
+  (let [c (:content p)]
+    (map (partial render-message-part m) c)))
 
-(defmethod render-message-part "text/plain" [m]
-  [:div {:key (:id m)} [:pre (:content m)]])
+(defmethod render-message-part "text/plain" [m p]
+  [:div {:key (:id p)} [:pre (:content p)]])
 
-(defmethod render-message-part :default [m]
+(defmethod render-message-part :default [m p]
   ;; XXX apparently the DOMParser is the best way to do html
-  [:div {:key (:id m)} [:pre "mime type " (:content-type m) " not supported"]])
+  [:div {:key (:id p)} [:pre "mime type " (:content-type p) " not supported"]])
+
+(def r-arrow [:span {:dangerouslySetInnerHTML {:__html "&rarr;"}}])
+
+;; XXX this is not 100% according to rfc 282x or whatever it is now.  More like 30%
+(defn parse-email-address [address]
+  (let [angles-re #"<([^\>]*)>"
+        parens-re #"\([^\)]*\)"]
+    (if-let [addr-spec (second (re-find angles-re address))]
+      {:addr-spec addr-spec
+       :name (str/trim (str/replace address angles-re ""))}
+      (if-let [name (second (re-find parens-re address))]
+        {:addr-spec (str/trim (str/replace address parens-re ""))
+         :name name}
+        {:addr-spec address :name address}))))
+
+(defn el-for-email-address [address]
+  (let [parsed (parse-email-address address)]
+    [:a.email-address
+     {:href (str "mailto:" (:addr-spec parsed))
+      :title address}
+     (:name parsed)]))
 
 (defn render-message [m]
   [:div.message {:key (:id m)}
-   [:div.headers
-    (map (fn [[k v]] [:div.header {:key k} [:span.name (name k) ":"] v]) (:headers m))]
+   (if (or true (:collapse-headers m))
+     (let [h (:headers m)]
+       [:div.headers.compact-headers
+        (el-for-email-address (:From h))
+        " " r-arrow " "
+        (el-for-email-address (:To h))
+        [:span {:style {:float "right"}} (:Date h)]])
+     [:div.headers
+      (map (fn [[k v]] [:div.header {:key k} [:span.name (name k) ":"] v]) (:headers m))])
    [:div (map (fn [tag] [:span.tag {:key tag} tag]) (:tags m))]
-   [:div.message-body (map render-message-part (:body m))]])
-
+   [:div.message-body (map (partial render-message-part m) (:body m))]])
 
 (defn render-thread [[frst & replies]]
   [:div.thread {:key (str "th:" (:id frst))}
@@ -225,6 +253,6 @@
   []
   (rf/dispatch-sync [:initialize])     ;; puts a value into application state
   (rf/dispatch-sync [:search-requested "hack"])
-#_  (rf/dispatch [:view-thread-requested (:thread r)])
+  (rf/dispatch [:view-thread-requested "00000000000067cd"])
   (reagent/render [ui]              ;; mount the application's ui into '<div id="app" />'
                   (js/document.getElementById "app")))
