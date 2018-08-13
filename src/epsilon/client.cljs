@@ -178,6 +178,14 @@
 (defmethod render-message-part "text/plain" [m p]
   [:div {:key (:id p)} [:pre (:content p)]])
 
+(defmethod render-message-part "application/octet-stream" [m p]
+  [:div.attachment {:key (:id p)}
+   [:a {:href (str "/raw?"
+                   "id=" (:id m) "&"
+                   "content-type=" (:content-type p) "&"
+                   "part=" (:id p))
+        :target "_download"} "Download " (:content-type p) " attachment " (:filename p)]])
+
 (defmethod render-message-part :default [m p]
   ;; XXX apparently the DOMParser is the best way to do html
   [:div {:key (:id p)} [:pre "mime type " (:content-type p) " not supported"]])

@@ -35,8 +35,13 @@
                            order-by))]
            terms)))
 
+
 (defmethod notmuch-args :show [_ id]
   ["show" "--format=json" "--body=true" (str "thread:" id)])
+
+(defmethod notmuch-args :raw [_ {:keys [message part]}]
+  ["show" "--format=raw" (str "--part=" part) (str "id:" message)
+   :out-enc :bytes])
 
 (defn notmuch [& args]
   (println args)
@@ -61,6 +66,16 @@
       (jr (:out ret))
       (fail (assoc ret :error "notmuch returned non-zero")))))
 
+(defn raw-handler [req]
+  (let [id (get (query-params req) "id")
+        part (get (query-params req) "part")
+        content-type (get (query-params req) "content-type")
+        ret (notmuch :raw {:message id :part part})]
+    (if (zero? (:exit ret))
+      {:headers {:content-type content-type
+                 } :status 200 :body (:out ret)}
+      (fail (assoc ret :error "notmuch returned non-zero")))))
+
 
 (defn tag-handler [req] (jr {:tags []}))
 
@@ -70,7 +85,8 @@
 
 (defn handler-by-uri [uri]
   (let [handlers
-        [["/search" search-handler]
+        [["/raw" raw-handler]
+         ["/search" search-handler]
          ["/show" show-handler]
          ["/target" static-files-handler]
          ["/tag" tag-handler]]]
