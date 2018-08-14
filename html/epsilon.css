@@ -27,24 +27,23 @@ body {
 }
     
 
-table.search-results tr td div {
-    height: 1.2em;
-    overflow: hidden;
-}
-table.search-results tr {
-    background-color: #eee;
-    margin-bottom: 1px;
+div.search-results .subject {
+    font-weight: bold;
+    padding-bottom: 3px;
 }
 
-td.authors {
-    width: 10em; 
+div.search-results div.result {
+    font-size: 80%;
+    border-bottom-style: dotted;
+    border-width: 1px;
+    border-color: #999;
+    padding: 4px 2px;
 }
-td.subject {
-    width: 40em; 
+
+div.search-results div.result span.when {
+    float: right;
 }
-td.when  {
-    width: 8em; 
-}
+
 span.tag {
     display: inline-block; font-size: 80%; background-color: #eee;
     padding: 2px 4px; margin: 0.3em;

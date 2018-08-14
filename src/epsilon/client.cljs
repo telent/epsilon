@@ -159,17 +159,17 @@
 (defn search-result
   []
   (let [rs @(rf/subscribe [:search-result])]
-    [:table.search-results
-     [:tbody
-      (map (fn [r]
-             [:tr
-              {:key (:thread r)
-               :on-click #(rf/dispatch [:view-thread-requested (:thread r)])}
-              [:td.authors [:div (:authors r)]]
-              [:td.subject [:div (:subject r)]]
-              [:td.when [:div (:date_relative r)]]
-              ])
-           rs)]]))
+    [:div.search-results
+     (map (fn [r]
+            [:div.result
+             {:key (:thread r)
+              :on-click #(rf/dispatch [:view-thread-requested (:thread r)])}
+             [:div.subject
+              [:span.subject (:subject r)]]
+             [:div
+              [:span.authors (:authors r)]
+              [:span.when [:div (:date_relative r)]]]])
+          rs)]))
 
 (defmulti render-message-part (fn [message part] (:content-type part)))
 
