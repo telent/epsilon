@@ -30,17 +30,20 @@
 (rf/reg-event-fx
  :search-requested
  (fn [{:keys [db]} [_ term]]
-   {:db (-> db
-            (assoc :search-term term)
-            (dissoc :thread-id :thread :search-result))
+   {:db (-> db (dissoc :show-completions :thread-id :thread :search-result))
     :http-xhrio
     {:method          :get
      :uri             "/search"
-     :params 	  {:q term :limit 10}
+     :params 	      {:q (:search-term db) :limit 10}
      :format          (ajax/url-request-format)
      :response-format (ajax/json-response-format {:keywords? true})
      :on-success      [:search-result]
      :on-failure      [:search-error]}}))
+
+(rf/reg-event-db
+ :search-term-updated
+ (fn [db [_ term]]
+   (assoc db :search-term term)))
 
 (rf/reg-event-db
  :show-completions
@@ -112,12 +115,16 @@
   []
   [:div.search-term-input
    {:placeholder "Search messages"}
-   [:input {:type "text"
-            :auto-complete "off"
-            :value @(rf/subscribe [:search-term])
-            :on-change
-            #(rf/dispatch [:search-requested (-> % .-target .-value)])
-            }]])
+   [:form {:on-submit
+           (fn [e]
+             (rf/dispatch [:search-requested true])
+             (.stopPropagation e)
+             (.preventDefault e))}
+    [:input {:type "text"
+             :auto-complete "off"
+             :value @(rf/subscribe [:search-term])
+             :on-change #(rf/dispatch [:search-term-updated (-> % .-target .-value)])
+             }]]])
 
 
 (defn tags
@@ -250,7 +257,7 @@
       [:div.search
        {:on-focus #(rf/dispatch [:show-completions true])}
        [search-term-input]
-       (if (or false  @(rf/subscribe [:show-completions])) [tags])]
+       (if   @(rf/subscribe [:show-completions]) [tags])]
       [:div {:id "threads"}
        [search-result]]])])
 
@@ -260,7 +267,8 @@
 (defn ^:export run
   []
   (rf/dispatch-sync [:initialize])     ;; puts a value into application state
-  (rf/dispatch-sync [:search-requested "hack"])
-  (rf/dispatch [:view-thread-requested "00000000000067cd"])
+  (rf/dispatch-sync [:search-term-updated "hack"])
+  (rf/dispatch-sync [:search-requested true])
+;  (rf/dispatch [:view-thread-requested "00000000000067cd"])
   (reagent/render [ui]              ;; mount the application's ui into '<div id="app" />'
                   (js/document.getElementById "app")))
