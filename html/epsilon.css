@@ -4,26 +4,35 @@ body {
     overflow-x: hidden;
 }
 
+div,form {
+    margin:0;
+}
+
+.search-term-input input {
+    font-size: 16px;
+    padding: 4px;
+}
 
 .search .taglist {
     position: relative;
     left: 0;
     top: 0;
+    z-index: 1001;
 }
-.search-term-input input {
-    font-size: 16px;
-    padding: 4px;
-}
-    
+
 .search .taglist ul {
     position: absolute;
     cursor: pointer;
-    background-color: white;
     left: 0;
     top: 0;
     width: 80%;
     height: auto;
-    z-index: 1001;
+    background-color: white;
+    margin: 0; padding: 0;
+    border: 1px solid black;
+}
+.search .taglist ul li {
+    padding: 2px;
 }
     
 
