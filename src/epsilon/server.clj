@@ -24,10 +24,10 @@
 
 (defmulti notmuch-args (fn [command & args] command))
 
-(defmethod notmuch-args :search [_ {:keys [offset limit order-by]} & terms]
+(defmethod notmuch-args :search [_ {:keys [offset output limit order-by]} & terms]
   (filter (complement empty?)
           (into
-           ["search" "--format=json" "--output=summary"
+           ["search" "--format=json" (str "--output=" (or output "summary"))
             (and offset (str "--offset=" offset))
             (and limit (str "--limit=" limit))
             (and order-by ({:newest " --sort=newest-first"
@@ -48,6 +48,18 @@
   (apply shell/sh
          (str (System/getenv "HOME") "/.nix-profile/bin/notmuch")
          (apply notmuch-args  args)))
+
+(defn completions-handler [req]
+  (let [p (query-params req)
+        term (get p "q")
+        limit 10
+        offset 0
+        ret (notmuch :search {:limit limit :offset offset :output "tags"} "*")]
+    (if (zero? (:exit ret))
+      (let [tags (json/parse-string (:out ret))]
+        (jr (json/generate-string (map #(str "tag:" %)
+                                       (filter #(.startsWith % term) tags)))))
+      (fail (assoc ret :error "notmuch returned non-zero")))))
 
 (defn search-handler [req]
   (let [p (query-params req)
@@ -85,7 +97,8 @@
 
 (defn handler-by-uri [uri]
   (let [handlers
-        [["/raw" raw-handler]
+        [["/completions" completions-handler]
+         ["/raw" raw-handler]
          ["/search" search-handler]
          ["/show" show-handler]
          ["/target" static-files-handler]

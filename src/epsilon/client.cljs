@@ -15,12 +15,13 @@
   :initialize
   (fn [_ _]
     {:search-term ""
+     :suggestions []
      }))
 
 (rf/reg-event-fx
  :search-requested
- (fn [{:keys [db]} [_ term]]
-   {:db (-> db (dissoc :show-completions :thread-id :thread :search-result))
+ (fn [{:keys [db]} [_ _]]
+   {:db (-> db (dissoc :show-suggestions :thread-id :thread :search-result))
     :http-xhrio
     {:method          :get
      :uri             "/search"
@@ -30,16 +31,24 @@
      :on-success      [:search-result]
      :on-failure      [:search-error]}}))
 
-(rf/reg-event-db
+(rf/reg-event-fx
  :search-term-updated
- (fn [db [_ term]]
-   (assoc db :search-term term)))
+ (fn [{:keys [db]} [_ term]]
+   {:db (-> db (assoc :search-term term))
+    :http-xhrio
+    {:method          :get
+     :uri             "/completions"
+     :params 	        {:q term :limit 10}
+     :format          (ajax/url-request-format)
+     :response-format (ajax/json-response-format {:keywords? true})
+     :on-success      [:new-suggestions-received]
+     :on-failure      [:new-suggestions-received]}}))
+
 
 (rf/reg-event-db
- :show-completions
+ :show-suggestions
  (fn [db [_ val]]
-   ;; XXX dispatch the autocomplete xhr req here
-   (assoc db :show-completions val)))
+   (assoc db :show-suggestions val)))
 
 (rf/reg-event-db
  :search-result
@@ -51,6 +60,12 @@
  (fn [db [_ error]]
    (.log js/console error)
    (assoc db :search-error error)))
+
+(rf/reg-event-db
+ :new-suggestions-received
+ (fn [db [_ result]]
+   (println result)
+   (assoc db :suggestions result)))
 
 (rf/reg-event-fx
  :view-thread-requested
@@ -84,9 +99,14 @@
     (:search-term db)))
 
 (rf/reg-sub
-  :show-completions
+  :show-suggestions
   (fn [db _]
-    (:show-completions db)))
+    (:show-suggestions db)))
+
+(rf/reg-sub
+  :suggestions
+  (fn [db _]
+    (:suggestions db)))
 
 (rf/reg-sub
   :search-result
@@ -117,33 +137,21 @@
              }]]])
 
 
-(defn tags
+(defn suggestions
   []
   [:div.taglist
    [:ul
-    (map (fn [tag]
+    (map (fn [suggestion]
            [:li
-            {:key tag
+            {:key suggestion
              :on-click
              (fn [e]
-               (rf/dispatch [:show-completions false])
-               (rf/dispatch [:search-requested (str "tag:" tag)]))
+               (rf/dispatch [:show-suggestions false])
+               (rf/dispatch [:search-term-updated suggestion])
+               (rf/dispatch [:search-requested true]))
              }
-            tag])
-         ["inbox"
-          "attachment"
-          "deleted"
-          "draft"
-          "fb"
-          "ham"
-          "new"
-          "refiled"
-          "replied"
-          "report"
-          "signed"
-          "spam"
-          "trash"
-          "unread"])]])
+            suggestion])
+         @(rf/subscribe [:suggestions]))]])
 
 
 (defn search-result
@@ -245,9 +253,12 @@
        [thread-pane]]]
      [:div
       [:div.search
-       {:on-focus #(rf/dispatch [:show-completions true])}
+       {:on-focus #(rf/dispatch [:show-suggestions true])
+        :on-blur #(do
+                    (rf/dispatch [:show-suggestions false])
+                    (println "blurr"))}
        [search-term-input]
-       (if   @(rf/subscribe [:show-completions]) [tags])]
+       (if   @(rf/subscribe [:show-suggestions]) [suggestions])]
       [:div {:id "threads"}
        [search-result]]])])
 
