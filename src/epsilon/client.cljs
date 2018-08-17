@@ -199,7 +199,8 @@
 
 ;; XXX this is not 100% according to rfc 282x or whatever it is now.  More like 30%
 (defn parse-email-address [address]
-  (let [angles-re #"<([^\>]*)>"
+  (let [;address (or address "(no address) <>")
+        angles-re #"<([^\>]*)>"
         parens-re #"\([^\)]*\)"]
     (if-let [addr-spec (second (re-find angles-re address))]
       {:addr-spec addr-spec
@@ -211,10 +212,12 @@
 
 (defn el-for-email-address [address]
   (let [parsed (parse-email-address address)]
-    [:a.email-address
-     {:href (str "mailto:" (:addr-spec parsed))
-      :title address}
-     (:name parsed)]))
+    (if (empty? (:addr-spec parsed))
+      [:span "(none)"]
+      [:a.email-address
+       {:href (str "mailto:" (:addr-spec parsed))
+        :title address}
+       (:name parsed)])))
 
 (defn render-message [m]
   [:div.message {:key (:id m)}
@@ -268,8 +271,8 @@
 (defn ^:export run
   []
   (rf/dispatch-sync [:initialize])     ;; puts a value into application state
-  (rf/dispatch-sync [:search-term-updated "hack"])
-  (rf/dispatch-sync [:search-requested true])
+#_  (rf/dispatch-sync [:search-term-updated "hack"])
+#_  (rf/dispatch-sync [:search-requested true])
 ;  (rf/dispatch [:view-thread-requested "00000000000067cd"])
   (reagent/render [ui]              ;; mount the application's ui into '<div id="app" />'
                   (js/document.getElementById "app")))

@@ -36,8 +36,12 @@
            terms)))
 
 
-(defmethod notmuch-args :show [_ id]
-  ["show" "--format=json" "--body=true" (str "thread:" id)])
+(defmethod notmuch-args :show [_ id {:keys [thread body]}]
+  ["show" "--format=json"
+   (if body "--body=true" "--body=false")
+   (if thread "--entire-thread=true" "--entire-thread=false")
+   id #_
+   (str "thread:" id)])
 
 (defmethod notmuch-args :raw [_ {:keys [message part]}]
   ["show" "--format=raw" (str "--part=" part) (str "id:" message)
@@ -49,17 +53,43 @@
          (str (System/getenv "HOME") "/.nix-profile/bin/notmuch")
          (apply notmuch-args  args)))
 
+(defn query-tags [prefix]
+  (let [ret (notmuch :search {:limit 10 :offset 0 :output "tags"} "*")]
+    (if (zero? (:exit ret))
+      (let [tags (json/parse-string (:out ret))]
+        (map #(str "tag:" %)
+             (filter #(.startsWith % prefix) tags)))
+      (assoc ret :error "notmuch returned non-zero"))))
+
+;;(map #(get % "authors") (query-threads "from:grace"))
+
+;; notmuch show --entire-thread=false --body=false --format=json from:chris  |jq .|less
+
+
+(defn find-header [name tree]
+  (if (or (seq? tree) (vector? tree))
+    (map (partial find-header name) tree)
+    (if-let [h (get tree "headers")]
+      (get h "From"))))
+
+
+(defn query-authors [term]
+  (let [ret (notmuch :show (str "from:" term) {:limit 100 :thread false :body false})]
+    (if (zero? (:exit ret))
+      (let [s (json/parse-string (:out ret))]
+        (map #(str "from:" %) (distinct (flatten (find-header "From" s)))))
+      (assoc ret :error "notmuch returned non-zero"))))
+
 (defn completions-handler [req]
   (let [p (query-params req)
         term (get p "q")
         limit 10
         offset 0
-        ret (notmuch :search {:limit limit :offset offset :output "tags"} "*")]
-    (if (zero? (:exit ret))
-      (let [tags (json/parse-string (:out ret))]
-        (jr (json/generate-string (map #(str "tag:" %)
-                                       (filter #(.startsWith % term) tags)))))
-      (fail (assoc ret :error "notmuch returned non-zero")))))
+        tags (query-tags term)
+        authors (query-authors term)]
+    (cond (:error tags) (fail tags)
+          (:error authors) (fail authors)
+          true (jr (json/generate-string (concat tags authors))))))
 
 (defn search-handler [req]
   (let [p (query-params req)
@@ -73,7 +103,7 @@
 
 (defn show-handler [req]
   (let [id (get (query-params req) "id")
-        ret (notmuch :show id)]
+        ret (notmuch :show (str "thread:" id) {:body true :thread true})]
     (if (zero? (:exit ret))
       (jr (:out ret))
       (fail (assoc ret :error "notmuch returned non-zero")))))
