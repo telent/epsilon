@@ -53,18 +53,19 @@
          (str (System/getenv "HOME") "/.nix-profile/bin/notmuch")
          (apply notmuch-args  args)))
 
-(defn query-tags [prefix]
-  (let [ret (notmuch :search {:limit 10 :offset 0 :output "tags"} "*")]
+(defn strip-prefix [prefix term]
+  (if (.startsWith term (str prefix ":"))
+    (.substring term (inc (.length prefix)))
+    term))
+
+(defn query-tags [term]
+  (let [term (strip-prefix "tag" term)
+        ret (notmuch :search {:limit 10 :offset 0 :output "tags"} "*")]
     (if (zero? (:exit ret))
       (let [tags (json/parse-string (:out ret))]
         (map #(str "tag:" %)
-             (filter #(.startsWith % prefix) tags)))
+             (filter #(.startsWith % term) tags)))
       (assoc ret :error "notmuch returned non-zero"))))
-
-;;(map #(get % "authors") (query-threads "from:grace"))
-
-;; notmuch show --entire-thread=false --body=false --format=json from:chris  |jq .|less
-
 
 (defn find-header [name tree]
   (if (or (seq? tree) (vector? tree))
@@ -74,22 +75,31 @@
 
 
 (defn query-authors [term]
-  (let [ret (notmuch :show (str "from:" term) {:limit 100 :thread false :body false})]
-    (if (zero? (:exit ret))
-      (let [s (json/parse-string (:out ret))]
-        (map #(str "from:" %) (distinct (flatten (find-header "From" s)))))
-      (assoc ret :error "notmuch returned non-zero"))))
+  (if (>  (.length term) 2)
+    (let [ret (notmuch :show (str "from:" (strip-prefix "from" term))
+                       {:limit 100 :thread false :body false})]
+      (if (zero? (:exit ret))
+        (let [s (json/parse-string (:out ret))]
+          (map #(str "from:" %) (distinct (flatten (find-header "From" s)))))
+        (assoc ret :error "notmuch returned non-zero")))
+    []))
+
 
 (defn completions-handler [req]
   (let [p (query-params req)
-        term (get p "q")
-        limit 10
-        offset 0
-        tags (query-tags term)
-        authors (query-authors term)]
-    (cond (:error tags) (fail tags)
-          (:error authors) (fail authors)
-          true (jr (json/generate-string (concat tags authors))))))
+        term (get p "q")]
+    (cond (.startsWith term "tag:")
+          (let [r (query-tags term)]
+            (if (:error r) (fail r) (jr (json/generate-string r))))
+          (.startsWith term "from:")
+          (let [r (query-authors term)]
+            (if (:error r) (fail r) (jr (json/generate-string r))))
+          true
+          (let [tags (query-tags term)
+                authors (query-authors term)]
+            (cond (:error tags) (fail tags)
+                  (:error authors) (fail authors)
+                  true (jr (json/generate-string (concat tags authors))))))))
 
 (defn search-handler [req]
   (let [p (query-params req)

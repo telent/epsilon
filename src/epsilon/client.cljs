@@ -42,7 +42,7 @@
      :format          (ajax/url-request-format)
      :response-format (ajax/json-response-format {:keywords? true})
      :on-success      [:new-suggestions-received]
-     :on-failure      [:new-suggestions-received]}}))
+     :on-failure      [:new-suggestions-received-error]}}))
 
 
 (rf/reg-event-db
@@ -66,6 +66,11 @@
  (fn [db [_ result]]
    (println result)
    (assoc db :suggestions result)))
+
+(rf/reg-event-db
+ :new-suggestions-received-error
+ (fn [db [_ err]]
+   (println "suggestions error" err)))
 
 (rf/reg-event-fx
  :view-thread-requested

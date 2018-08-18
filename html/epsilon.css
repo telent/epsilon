@@ -30,9 +30,14 @@ div,form {
     background-color: white;
     margin: 0; padding: 0;
     border: 1px solid black;
+    font-height: 90%;
+    overflow-x: hidden;
 }
 .search .taglist ul li {
     padding: 2px;
+}
+.search .taglist ul li:hover {
+    background-color: #eee;
 }
     
 
