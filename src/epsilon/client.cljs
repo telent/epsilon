@@ -6,6 +6,11 @@
             [re-frame.core :as rf]
             [clojure.string :as str]))
 
+
+(defn html-entity [name]
+  [:span {:dangerouslySetInnerHTML {:__html (str name ";")}}])
+
+
 ;; -- Domino 1 - Event Dispatch -----------------------------------------------
 
 
@@ -20,16 +25,18 @@
 
 (rf/reg-event-fx
  :search-requested
- (fn [{:keys [db]} [_ _]]
+ (fn [{:keys [db]} [_ term]]
    {:db (-> db (dissoc :show-suggestions :thread-id :thread :search-result))
     :http-xhrio
     {:method          :get
      :uri             "/search"
-     :params 	      {:q (:search-term db) :limit 10}
+     :params 	      {:q term :limit 10}
      :format          (ajax/url-request-format)
      :response-format (ajax/json-response-format {:keywords? true})
      :on-success      [:search-result]
-     :on-failure      [:search-error]}}))
+     :on-failure      [:search-error]}
+    :dispatch [:search-term-updated term]
+    }))
 
 (rf/reg-event-fx
  :search-term-updated
@@ -128,18 +135,24 @@
 
 (defn search-term-input
   []
-  [:div.search-term-input
-   {:placeholder "Search messages"}
-   [:form {:on-submit
-           (fn [e]
-             (rf/dispatch [:search-requested true])
-             (.stopPropagation e)
-             (.preventDefault e))}
-    [:input {:type "text"
-             :auto-complete "off"
-             :value @(rf/subscribe [:search-term])
-             :on-change #(rf/dispatch [:search-term-updated (-> % .-target .-value)])
-             }]]])
+  (let [term  @(rf/subscribe [:search-term])]
+    [:div.search-term-input
+     [:form {:on-submit
+             (fn [e]
+               (rf/dispatch [:search-requested term])
+               (.stopPropagation e)
+               (.preventDefault e))}
+      [:input {:type "text"
+               :placeholder "Search messages"
+               :auto-complete "off"
+               :value term
+               :on-change #(rf/dispatch [:search-term-updated (-> % .-target .-value)])
+               }]
+      [:span {:on-click #(rf/dispatch [:search-term-updated ""])}
+       (html-entity "&nbsp")
+       (html-entity "&#xd7")
+       (html-entity "&nbsp")
+       ]]]))
 
 
 (defn suggestions
@@ -152,8 +165,7 @@
              :on-click
              (fn [e]
                (rf/dispatch [:show-suggestions false])
-               (rf/dispatch [:search-term-updated suggestion])
-               (rf/dispatch [:search-requested true]))
+               (rf/dispatch [:search-requested suggestion]))
              }
             suggestion])
          @(rf/subscribe [:suggestions]))]])
@@ -200,7 +212,7 @@
   ;; XXX apparently the DOMParser is the best way to do html
   [:div {:key (:id p)} [:pre "mime type " (:content-type p) " not supported"]])
 
-(def r-arrow [:span {:dangerouslySetInnerHTML {:__html "&rarr;"}}])
+(def r-arrow (html-entity "&rarr"))
 
 ;; XXX this is not 100% according to rfc 282x or whatever it is now.  More like 30%
 (defn parse-email-address [address]
@@ -262,10 +274,12 @@
      [:div
       [:div.search
        {:on-focus #(rf/dispatch [:show-suggestions true])
+        :tabindex -1
         :on-blur #(do
                     (rf/dispatch [:show-suggestions false])
                     (println "blurr"))}
-       [search-term-input]
+       [:span
+        [search-term-input]]
        (if   @(rf/subscribe [:show-suggestions]) [suggestions])]
       [:div {:id "threads"}
        [search-result]]])])
@@ -276,8 +290,7 @@
 (defn ^:export run
   []
   (rf/dispatch-sync [:initialize])     ;; puts a value into application state
-#_  (rf/dispatch-sync [:search-term-updated "hack"])
-#_  (rf/dispatch-sync [:search-requested true])
+  (rf/dispatch-sync [:search-requested "tag:new"])
 ;  (rf/dispatch [:view-thread-requested "00000000000067cd"])
   (reagent/render [ui]              ;; mount the application's ui into '<div id="app" />'
                   (js/document.getElementById "app")))
