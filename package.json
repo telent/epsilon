@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@cljs-oss/module-deps": "github:cljs-oss/module-deps",
+    "feather-icons": "^4.7.3"
+  }
+}

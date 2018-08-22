@@ -4,12 +4,18 @@
             [ajax.core :as ajax :refer [GET POST]]
             [day8.re-frame.http-fx]
             [re-frame.core :as rf]
-            [clojure.string :as str]))
-
+            [clojure.string :as str]
+            ["feather-icons" :as feather]
+            ))
 
 (defn html-entity [name]
   [:span {:dangerouslySetInnerHTML {:__html (str name ";")}}])
 
+(defn icon
+  ([name] (icon name {}))
+  ([name attributes]
+   (let [svg (.toSvg (aget (.-icons feather) name) (clj->js attributes) )]
+     [:span {:dangerouslySetInnerHTML {:__html svg}}])))
 
 ;; -- Domino 1 - Event Dispatch -----------------------------------------------
 
@@ -142,12 +148,15 @@
                (rf/dispatch [:search-requested term])
                (.stopPropagation e)
                (.preventDefault e))}
-      [:input {:type "text"
-               :placeholder "Search messages"
-               :auto-complete "off"
-               :value term
-               :on-change #(rf/dispatch [:search-term-updated (-> % .-target .-value)])
-               }]
+      [:span {:style {:position "relative"}}
+       [:input {:type "text"
+                :placeholder "Search messages"
+                :auto-complete "off"
+                :value term
+                :on-change #(rf/dispatch [:search-term-updated (-> % .-target .-value)])
+                }]
+       [:span {:style {:position "absolute" :top "2px" :right "0.5em"}}
+        (icon "search" {:width "1em" :height "1em"})]]
       [:span {:on-click #(rf/dispatch [:search-term-updated ""])}
        (html-entity "&nbsp")
        (html-entity "&#xd7")
@@ -274,7 +283,7 @@
      [:div
       [:div.search
        {:on-focus #(rf/dispatch [:show-suggestions true])
-        :tabindex -1
+        :tabIndex -1
         :on-blur #(do
                     (rf/dispatch [:show-suggestions false])
                     (println "blurr"))}

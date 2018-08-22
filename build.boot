@@ -22,6 +22,8 @@
 
 
 (task-options!
- {:cljs {:optimizations :none ;:whitespace
+ {:cljs {:optimizations :simple ;# :none ;:whitespace
          :output-dir "target/"
+         :npm-deps true
+         :install-deps true
          }})
