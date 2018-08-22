@@ -39,7 +39,10 @@ div,form {
 .search .taglist ul li:hover {
     background-color: #eee;
 }
-    
+.search svg.feather-delete {
+    vertical-align: bottom;
+}
+
 
 div.search-results .subject {
     font-weight: bold;
