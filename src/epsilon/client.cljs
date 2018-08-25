@@ -19,9 +19,16 @@
 
 (defn icon
   ([name] (icon name {}))
-  ([name attributes]
-   (let [svg (.toSvg (aget (.-icons feather) name) (clj->js attributes) )]
-     [:span {:dangerouslySetInnerHTML {:__html svg}}])))
+  ([name attrs]
+   (let [o (aget (.-icons feather) name)
+         attrs-from-icon (js->clj (.-attrs o) :keywordize-keys true)
+         attrs (if-let [v (:view-box attrs)]
+                 (assoc attrs :viewBox (str/join " " v))
+                 attrs)]
+     [:svg (merge attrs-from-icon
+                  (inner-html (.-contents o))
+                  attrs)])))
+
 
 ;; -- Domino 1 - Event Dispatch -----------------------------------------------
 
