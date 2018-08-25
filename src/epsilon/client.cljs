@@ -231,7 +231,6 @@
         :target "_download"} "Download " (:content-type p) " attachment " (:filename p)]])
 
 (defmethod render-message-part :default [m p]
-  ;; XXX apparently the DOMParser is the best way to do html
   [:div {:key (:id p)} [:pre "mime type " (:content-type p) " not supported"]])
 
 (def r-arrow (html-entity "&rarr"))
