@@ -8,8 +8,14 @@
             ["feather-icons" :as feather]
             ))
 
-(defn html-entity [name]
-  [:span {:dangerouslySetInnerHTML {:__html (str name ";")}}])
+(defn inner-html [s]
+  {:dangerouslySetInnerHTML {:__html s}})
+
+(defn html-entity
+  ([name attrs]
+   [:span (merge attrs (inner-html (str name ";")))])
+  ([name] (html-entity name {})))
+
 
 (defn icon
   ([name] (icon name {}))
