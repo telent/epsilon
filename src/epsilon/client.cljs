@@ -169,10 +169,10 @@
                 :on-change #(rf/dispatch [:search-term-updated (-> % .-target .-value)])
                 }]
        [:span {:style {:position "absolute" :top "2px" :right "0.5em"}}
-        (icon "search" {:width "1em" :color "grey" :height "1em"})]]
+        (icon "search" {:style {:color "grey"} :view-box [2 2 24 24] :height 19 :width 19})]]
       [:span {:on-click #(rf/dispatch [:search-term-updated ""])}
        (html-entity "&nbsp")
-       (icon "delete" {:width "1em"  :class "icon"})
+       (icon "delete" {})
        (html-entity "&nbsp")
        ]]]))
 
