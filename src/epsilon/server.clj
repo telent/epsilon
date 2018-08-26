@@ -36,9 +36,10 @@
            terms)))
 
 
-(defmethod notmuch-args :show [_ id {:keys [thread body]}]
+(defmethod notmuch-args :show [_ id {:keys [thread body include-html]}]
   ["show" "--format=json"
    (if body "--body=true" "--body=false")
+   (if include-html "--include-html" "")
    (if thread "--entire-thread=true" "--entire-thread=false")
    id #_
    (str "thread:" id)])
@@ -48,10 +49,10 @@
    :out-enc :bytes])
 
 (defn notmuch [& args]
-  (println args)
-  (apply shell/sh
-         (str (System/getenv "HOME") "/.nix-profile/bin/notmuch")
-         (apply notmuch-args  args)))
+  (let [args (apply notmuch-args  args)]
+    (apply shell/sh
+           (str (System/getenv "HOME") "/.nix-profile/bin/notmuch")
+           args)))
 
 (defn strip-prefix [prefix term]
   (if (.startsWith term (str prefix ":"))
@@ -113,7 +114,7 @@
 
 (defn show-handler [req]
   (let [id (get (query-params req) "id")
-        ret (notmuch :show (str "thread:" id) {:body true :thread true})]
+        ret (notmuch :show (str "thread:" id) {:body true :include-html true :thread true})]
     (if (zero? (:exit ret))
       (jr (:out ret))
       (fail (assoc ret :error "notmuch returned non-zero")))))

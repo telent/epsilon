@@ -1,12 +1,15 @@
 (ns epsilon.client
   (:require [reagent.core :as reagent]
-            [clojure.string :as str]
             [ajax.core :as ajax :refer [GET POST]]
             [day8.re-frame.http-fx]
             [re-frame.core :as rf]
             [clojure.string :as str]
+            [epsilon.hiccup :as hiccup]
             ["feather-icons" :as feather]
             ))
+
+;; some day, my son, all this will be user-selectable
+(def preferred-multipart-alternative "text/html")
 
 (defn inner-html [s]
   {:dangerouslySetInnerHTML {:__html s}})
@@ -212,8 +215,8 @@
 
 (defmethod render-message-part "multipart/alternative" [m p]
   (let [c (:content p)
-        plain (first (filter #(= (:content-type %) "text/plain") c))]
-    (render-message-part m plain)))
+        preferred (first (filter #(= (:content-type %) preferred-multipart-alternative) c))]
+    (render-message-part m preferred)))
 
 (defmethod render-message-part "multipart/mixed" [m p]
   (let [c (:content p)]
@@ -221,6 +224,14 @@
 
 (defmethod render-message-part "text/plain" [m p]
   [:div {:key (:id p)} [:pre (:content p)]])
+
+;; FIXME Probably we should do HTML parsing when the message is fetched, not every time
+;; we render it.
+
+(defmethod render-message-part "text/html" [m p]
+  (let [[_ attrs & content]  (hiccup/parse-html (:content p))]
+    (into [:div attrs] content)))
+
 
 (defmethod render-message-part "application/octet-stream" [m p]
   [:div.attachment {:key (:id p)}
