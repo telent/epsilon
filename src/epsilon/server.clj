@@ -37,13 +37,12 @@
            terms)))
 
 
-(defmethod notmuch-args :show [_ id {:keys [thread body include-html]}]
+(defmethod notmuch-args :show [_ term {:keys [thread body include-html]}]
   ["show" "--format=json"
    (if body "--body=true" "--body=false")
-   (if include-html "--include-html" "")
+   (if include-html "--include-html=true" "--include-html=false" )
    (if thread "--entire-thread=true" "--entire-thread=false")
-   id #_
-   (str "thread:" id)])
+   term])
 
 (defmethod notmuch-args :raw [_ {:keys [message part]}]
   ["show" "--format=raw" (str "--part=" part) (str "id:" message)
