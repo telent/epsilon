@@ -68,7 +68,6 @@
 
 (defn node-type [el]
   (let [nt (.-nodeType el)]
-    (println (.-tagName el) nt)
     (cond
       (or (= nt (.-ELEMENT_NODE js/Node))
           (= nt (.-DOCUMENT_NODE js/Node)))
