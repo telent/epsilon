@@ -7,7 +7,8 @@
    [clojure.string :as str]
    ring.util.codec
    ring.util.response
-   ))
+   )
+  (:gen-class))
 
 (defn jr [v]
   {:status 200
