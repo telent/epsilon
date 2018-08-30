@@ -40,6 +40,13 @@
 (def xml-attributes
   [:xml:lang])
 
+(defn rewrite-keys [substitutions attrs]
+  (reduce-kv (fn [m k v]
+               (assoc m (get substitutions k k) v))
+             {}
+             attrs))
+
+
 (def common-attributes (concat core-attributes xml-attributes))
 
 (defmethod safe-attributes :table [_ el attrs]
@@ -53,7 +60,8 @@
     (assoc a :style (allow-styles (extract-styles el)))))
 (defmethod safe-attributes :td [_ el attrs]
   (let [a (select-keys attrs (concat common-attributes [:colspan :rowspan :headers]))]
-    (assoc a :style (allow-styles (extract-styles el)))))
+    (assoc (rewrite-keys {:colspan :colSpan, :rowspan :rowSpan} a)
+           :style (allow-styles (extract-styles el)))))
 
 
 (defmethod safe-attributes :img [_ el {:keys [src style]}]
@@ -86,7 +94,7 @@
         (into [tag
                (safe-attributes tag el (el-attributes el))]
               (map virtualize-dom-element (array-seq (.-childNodes el))))
-        [:span {} "[" tag " redacted]"]))
+        [:span {} "["  (.-tagName el) " redacted]"]))
     :text-content
     (.-textContent el)
     ""))
