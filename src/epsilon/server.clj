@@ -1,6 +1,7 @@
 (ns epsilon.server
   (:require
    [aleph.http :as aleph]
+   [aleph.netty :as netty]
    [cheshire.core :as json]
    [clojure.java.shell :as shell]
    [clojure.string :as str]
@@ -153,4 +154,10 @@
 
 (defn run [config]
   (let [config (merge {:port 8080} config)]
+    (println "running with config " config)
     (aleph/start-server #'handler config)))
+
+(defn -main [& args]
+  (let [config (reduce (fn [m [k v]] (assoc m k v)) {} (partition 2 (map read-string args)))
+        s (run config)]
+    (netty/wait-for-close s)))
