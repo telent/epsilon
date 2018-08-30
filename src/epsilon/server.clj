@@ -73,7 +73,7 @@
   (if (or (seq? tree) (vector? tree))
     (map (partial find-header name) tree)
     (if-let [h (get tree "headers")]
-      (get h "From"))))
+      (get h name))))
 
 
 (defn query-authors [term]
