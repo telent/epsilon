@@ -5,7 +5,13 @@
             [re-frame.core :as rf]
             [clojure.string :as str]
             [epsilon.hiccup :as hiccup]
+            [epsilon.icons.chevrons-left]
+            [epsilon.icons.delete]
             [epsilon.icons.search]
+            [epsilon.icons.tag]
+            [epsilon.icons.user]
+            [epsilon.logo]
+
             ))
 
 ;; some day, my son, all this will be user-selectable
