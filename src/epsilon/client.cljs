@@ -33,6 +33,11 @@
      :suggestions []
      }))
 
+(defn urlable-term [term]
+  (if (string? (first term))
+    (str (get {"address" "from"} (first term) (first term)) ":" (second term))
+    term))
+
 (rf/reg-event-fx
  :search-requested
  (fn [{:keys [db]} [_ term]]
@@ -174,6 +179,16 @@
        (html-entity "&nbsp")
        ]]]))
 
+(defmulti html-for-suggestion (fn [[key value]] key))
+(defmethod html-for-suggestion "address" [[key value]]
+  [:span
+   (merge epsilon.icons.user/svg {:width 18 :height 18}) value])
+(defmethod html-for-suggestion "tag" [[key value]]
+  [:span
+   (merge epsilon.icons.tag/svg {:width 18 :height 18}) value])
+
+(defmethod html-for-suggestion :default [[key value]]
+  value)
 
 (defn suggestions
   []
@@ -185,9 +200,9 @@
              :on-click
              (fn [e]
                (rf/dispatch [:show-suggestions false])
-               (rf/dispatch [:search-requested suggestion]))
+               (rf/dispatch [:search-requested (urlable-term suggestion)]))
              }
-            suggestion])
+            (html-for-suggestion suggestion)])
          @(rf/subscribe [:suggestions]))]])
 
 

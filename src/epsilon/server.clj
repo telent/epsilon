@@ -65,7 +65,7 @@
         ret (notmuch :search {:limit 10 :offset 0 :output "tags"} "*")]
     (if (zero? (:exit ret))
       (let [tags (json/parse-string (:out ret))]
-        (map #(str "tag:" %)
+        (map #(vector :tag %)
              (filter #(.startsWith % term) tags)))
       (assoc ret :error "notmuch returned non-zero"))))
 
@@ -82,7 +82,8 @@
                        {:limit 100 :thread false :body false})]
       (if (zero? (:exit ret))
         (let [s (json/parse-string (:out ret))]
-          (map #(str "from:" %) (distinct (flatten (find-header "From" s)))))
+          (map #(vector :address %)
+               (distinct (flatten (find-header "From" s)))))
         (assoc ret :error "notmuch returned non-zero")))
     []))
 
