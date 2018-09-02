@@ -17,6 +17,7 @@
 ;; some day, my son, all this will be user-selectable
 (def preferred-multipart-alternative "text/html")
 
+
 (defn inner-html [s]
   {:dangerouslySetInnerHTML {:__html s}})
 
@@ -26,6 +27,14 @@
   ([name] (html-entity name {})))
 
 
+(defn merge-attrs [[name attrs & kids] more-attrs]
+  (let [attrs (merge attrs more-attrs)
+        vb (if-let [overridden (get attrs :view-box)]
+             (str/join " " overridden)
+             (get :viewBox attrs))
+        attrs (assoc attrs :viewBox vb)]
+    (println attrs)
+    (into [name attrs] kids)))
 
 ;; -- Domino 1 - Event Dispatch -----------------------------------------------
 
@@ -169,19 +178,20 @@
                (rf/dispatch [:search-requested term])
                (.stopPropagation e)
                (.preventDefault e))}
-      [:span {:style {:position "relative"}}
+      [:div.widget ;{:style {:position "relative"}}
        [:input {:type "text"
                 :placeholder "Search messages"
                 :auto-complete "off"
                 :value term
                 :on-change #(rf/dispatch [:search-term-updated (-> % .-target .-value)])
                 }]
-       [:span {:style {:position "absolute" :top "2px" :right "0.5em"}}
-        (merge epsilon.icons.search/svg
-               {:style {:color "grey"} :view-box [2 2 24 24] :height 19 :width 19})]]
+       [:span {:style {:position "absolute" :top "4px" :right "0.2em"}}
+        (merge-attrs
+         epsilon.icons.search/svg
+         {:style {:color "grey"} :view-box [2 2 24 24] :height 30 :width 30})]]
       [:span {:on-click #(rf/dispatch [:search-term-updated ""])}
-       (html-entity "&nbsp")
-       epsilon.icons.delete/svg
+       (html-entity "&nbsp") (html-entity "&nbsp")
+       (merge-attrs epsilon.icons.delete/svg {:view-box [0 2 30 20] :height 40 :width 34})
        (html-entity "&nbsp")
        ]]]))
 
@@ -318,9 +328,9 @@
   [:div
    (menu "Epsilon"
          [:li.clickable {:key :home :on-click #(rf/dispatch [:search-term-updated ""])}
-          epsilon.logo/svg]
+          (merge-attrs epsilon.logo/svg {:width 30 :height 30})]
          [:li.clickable {:key :refresh :on-click #(.log js/console "refresh")}
-          epsilon.icons.refresh-cw.svg])
+          (merge-attrs epsilon.icons.refresh-cw.svg {:view-box [0 0 25 25] :width 30 :height 30})])
    [:div.content
     [:div.search
      {:on-focus #(rf/dispatch [:show-suggestions true])
@@ -328,8 +338,7 @@
       :on-blur #(do
                   (rf/dispatch [:show-suggestions false])
                   (println "blurr"))}
-     [:span
-      [search-term-input]]
+     [search-term-input]
      (if   @(rf/subscribe [:show-suggestions]) [suggestions])]
     [:div {:id "threads"}
      [search-result]]]])
@@ -341,7 +350,7 @@
    (menu
     @(rf/subscribe [:thread-subject])
     [:span.clickable {:key :back :on-click #(rf/dispatch [:thread-retrieved nil])}
-     (merge epsilon.icons.chevrons-left/svg {:view-box [0 4 22 15]})])
+     (merge-attrs epsilon.icons.chevrons-left/svg {:view-box [0 4 22 15] :width 30 :height 30})])
    [:div.thread.content
     [thread-pane]]])
 
@@ -359,7 +368,7 @@
 (defn ^:export run
   []
   (rf/dispatch-sync [:initialize])     ;; puts a value into application state
-  (rf/dispatch-sync [:search-requested "tag:new"])
+  (rf/dispatch-sync [:search-requested "richer"])
 ;  (rf/dispatch [:view-thread-requested "00000000000067cd"])
   (reagent/render [ui]              ;; mount the application's ui into '<div id="app" />'
                   (js/document.getElementById "app")))

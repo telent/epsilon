@@ -9,6 +9,7 @@
   #{
     :body
     :a :address :b :big :blockquote :br :center :cite :code :dd :div :dl :dt :em
+    :font
     :h1 :h2 :h3 :h4 :h5 :h6
     :hr :i :img :lh :li :ol :p :pre :section :small :span :strong :sub :sup
     :table :tbody :td :th :tr :ul
@@ -48,6 +49,8 @@
 
 
 (def common-attributes (concat core-attributes xml-attributes))
+
+(defmethod safe-attributes :font [_ el attrs] {})
 
 (defmethod safe-attributes :table [_ el attrs]
   (let [a (select-keys attrs common-attributes)]
