@@ -299,12 +299,14 @@
    (if (or true (:collapse-headers m))
      (let [h (:headers m)]
        [:div.headers.compact-headers
-        (el-for-email-address (:From h))
-        " " r-arrow " "
-        (el-for-email-address (:To h))
-        [:span {:style {:float "right"}} (:Date h)]])
+        [:div
+         (el-for-email-address (:From h))
+         " " r-arrow " "
+         (el-for-email-address (:To h))]
+        [:div (:Date h)]])
      [:div.headers
-      (map (fn [[k v]] [:div.header {:key k} [:span.name (name k) ":"] v]) (:headers m))])
+      (map (fn [[k v]] [:div.header {:key k} [:span.name (name k) ":"] v])
+           (:headers m))])
    [:div (map (fn [tag] [:span.tag {:key tag} tag]) (:tags m))]
    [:div.message-body (map (partial render-message-part m) (:body m))]])
 
@@ -319,17 +321,17 @@
     (render-thread m)))
 
 (defn menu [title & items]
-  [:div.menu
-   [:ul items]
-   [:span.title title]])
+  [:div.titleblock
+   [:div.menu (map #(vector :div.item %)  items)]
+   title])
 
 
 (defn search-page []
   [:div
-   (menu "Epsilon"
-         [:li.clickable {:key :home :on-click #(rf/dispatch [:search-term-updated ""])}
+   (menu [:span.title "Epsilon"]
+         [:span.clickable {:key :home :on-click #(rf/dispatch [:search-term-updated ""])}
           (merge-attrs epsilon.logo/svg {:width 30 :height 30})]
-         [:li.clickable {:key :refresh :on-click #(.log js/console "refresh")}
+         [:span.clickable {:key :refresh :on-click #(.log js/console "refresh")}
           (merge-attrs epsilon.icons.refresh-cw.svg {:view-box [0 0 25 25] :width 30 :height 30})])
    [:div.content
     [:div.search
@@ -345,10 +347,11 @@
 
 
 (defn thread-page []
-
   [:div
    (menu
-    @(rf/subscribe [:thread-subject])
+    [:span {:style {:font-size "16px" :vertical-align :top
+                    :margin-top "4px" }}
+     @(rf/subscribe [:thread-subject])]
     [:span.clickable {:key :back :on-click #(rf/dispatch [:thread-retrieved nil])}
      (merge-attrs epsilon.icons.chevrons-left/svg {:view-box [0 4 22 15] :width 30 :height 30})])
    [:div.thread.content

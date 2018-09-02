@@ -13,6 +13,7 @@
     :h1 :h2 :h3 :h4 :h5 :h6
     :hr :i :img :lh :li :ol :p :pre :section :small :span :strong :sub :sup
     :table :tbody :td :th :tr :ul
+    :wbr
     })
 
 

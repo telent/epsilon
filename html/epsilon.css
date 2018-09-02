@@ -14,10 +14,10 @@ body,div,form {
 }
 
 
-.menu {
+.titleblock {
     background: #552;
+    background: linear-gradient(135deg, #662, #440);
     color: white;
-    font-size: 2rem;
     position: fixed;
     margin: 0 ;
     border-bottom: black solid 1px;
@@ -26,25 +26,22 @@ body,div,form {
     height: 3.2rem;
 }
 
-
-.menu ul {
-    padding: 0.1em 0.2em;
-    margin: 3px 0 3px 0;
-    list-style: none;
+.titleblock .menu {
+    float: left;
+    margin-left: 0.5em;
+} 
+.titleblock .menu .item {
+    padding: 0.6em 0.3em;
+    float: left;
     display: inline-block;
 }
 
-.menu ul li {
-    padding: 0.2em;
-    display: inline-block;
-}
 
-.menu .title {
-    display: inline-block;
+.titleblock .title {
     vertical-align: top;
     padding-left: 1em;
-    padding-top: 4px;
-    font-size: 17px;
+    padding-top: 8px;
+    font-size: 22px;
 }
 
 .content {
@@ -132,27 +129,44 @@ span.tag {
     border-width: 1px; border-color: #222; border-style: solid;
 }
 
+.thread {
+    background-color: #eee;
+}
+
+.message {
+    margin: 0.5em 0.5em 0.5em 0.3em;
+    border: 1px dots #ddd;
+    background-color: white;
+}
+
 .message .headers .header .name {
     font-weight: bold;
 }
 
 .message .headers {
-    border: 1px solid grey;
-    background-color: #ffdddd;
-    padding: 4px 2px;
+    background-color: #cfe;
+/*    background: linear-gradient(135deg, #ffffc0, #ffffc0, #ffffc0, #ffffc0, #ffffa0, #e6e650); */
+    padding: 4px 2px 8px 2px;
+    border-bottom: 1px dotted #ddd;
 }
 .message .compact-headers {
-    position: sticky;
-    font-size: 80%;
-    top: 0;
-    height: 1em;
-    overflow-y: hidden;
+    padding-top: 8px;
+    font-size: 90%;
 }
-
+.message .compact-headers a {
+    text-decoration: none;
+    color: black;
+    
+}
 .message .headers .header .name:after {
     content: "   ";
 }
-
+.message-body {
+    margin: 4px;
+    overflow-x: hidden;
+    overflow-wrap: break-word;
+}
+                    
 .message-body pre {
     font-size: 75%;
     white-space: pre-wrap;
