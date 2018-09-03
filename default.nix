@@ -3,7 +3,7 @@ with pkgs;
 let sourceFilesOnly = path: type:
     !((baseNameOf path == "var") ||
       (baseNameOf path == "target"));
-  depSpecs = builtins.fromJSON (builtins.readFile ./nix-deps.json);
+  depSpecs = builtins.fromJSON (builtins.readFile ./deps.json);
   mapJars = builtins.foldl'
    (m: a: m // builtins.listToAttrs
 		[(lib.attrsets.nameValuePair
@@ -32,8 +32,8 @@ in stdenv.mkDerivation rec {
     name = "epsilon";
     owner = "telent";
     repo = "epsilon";
-    rev = "5563ad26377c88a539b7a74163aa1ac82a43483d";
-    sha256 = "0lq2c37fi25zbcfrfnnjj494mdzhn0nfyrxy47pk7k5maanzq3v8";
+    rev = "c3bb0ff030d6c067137c9806649e9c464626ebca";
+    sha256 = "0ysciq97ggy5jkh995syzvx76w8j9pwpsnm9n9nrkr62alw6jd0q";
   }; in [s icons];
   sourceRoot = "epsilon";
   nativeBuildInputs = [ clojure openjdk makeWrapper ];
