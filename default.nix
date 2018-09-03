@@ -30,8 +30,8 @@ in stdenv.mkDerivation rec {
     name = "epsilon";
     owner = "telent";
     repo = "epsilon";
-    rev = "c3bb0ff030d6c067137c9806649e9c464626ebca";
-    sha256 = "0ysciq97ggy5jkh995syzvx76w8j9pwpsnm9n9nrkr62alw6jd0q";
+    rev = "5ebf1bbf1433806766165bfea58b60002ff4d62a";
+    sha256 = "0nqxqc9wq7vklw6naiy1vrzvhkb62n66dmkfzp56jly8390q027r";
   }; in [s icons];
   sourceRoot = "epsilon";
   nativeBuildInputs = [ clojure openjdk makeWrapper ];
