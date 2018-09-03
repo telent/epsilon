@@ -4,10 +4,14 @@
  {"central" {:url "https://repo1.maven.org/maven2/"}
   "clojars" {:url "https://clojars.org/repo"}}
  :aliases
- {:build
+ {:nixtract
   {:extra-deps
    {org.clojure/tools.deps.alpha {:mvn/version "0.5.442"}
     org.clojure/data.json {:mvn/version "0.2.6"}}
+   :extra-paths ["build"]}
+  :build
+  {:extra-deps
+   {org.clojure/data.xml {:mvn/version "0.2.0-alpha5" :exclusions [org.clojure/clojure]}}
    :extra-paths ["build"]}
   :dev
   {:extra-deps
@@ -26,4 +30,4 @@
   day8.re-frame/http-fx {:mvn/version "0.1.6"}
   reagent  {:mvn/version "0.7.0"}
   re-frame {:mvn/version "0.10.5"}}}
-{:deps []}
+

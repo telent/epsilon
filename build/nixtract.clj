@@ -34,7 +34,8 @@
 
 (defn nix-libs []
   (let [deps (read-string (slurp "deps.edn"))
-        libs (deps/resolve-deps deps {})
+        _ (println (:build (:aliases deps)))
+        libs (deps/resolve-deps deps  (:build (:aliases deps)))
         maven-local-repo (or (:mvn/local-repo deps)
                              clojure.tools.deps.alpha.util.maven/default-local-repo)
         artifacts
