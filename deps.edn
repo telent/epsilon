@@ -1,3 +1,4 @@
+;; don't forget to run build/nixtract.clj after updating this file
 {:paths ["src" "html"]
  :mvn/repos
  {"central" {:url "https://repo1.maven.org/maven2/"}
@@ -14,6 +15,7 @@
     adzerk/boot-cljs-repl {:mvn/version "0.3.3"}
     com.cemerick/piggieback {:mvn/version "0.2.1"}
     weasel {:mvn/version "0.7.0"}}}}
+ ;; don't forget to run build/nixtract.clj after updating this file
  :deps
  {aleph {:mvn/version "0.4.6"}
   cheshire {:mvn/version "5.8.0"}
