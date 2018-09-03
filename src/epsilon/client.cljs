@@ -6,6 +6,7 @@
             [clojure.string :as str]
             [epsilon.hiccup :as hiccup]
             [epsilon.icons.chevrons-left]
+            [epsilon.icons.refresh-cw]
             [epsilon.icons.delete]
             [epsilon.icons.search]
             [epsilon.icons.tag]

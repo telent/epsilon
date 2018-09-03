@@ -41,7 +41,7 @@ in stdenv.mkDerivation rec {
     CLJ_CONFIG=. CLJ_CACHE=. clojure -Scp build:$CLASSPATH -A:build -m hiccupize-icons ${icons}/icons
     java -cp $BUILD_CLASSPATH clojure.main  \
       -e '(require (quote cljs.build.api))' \
-      -e "(cljs.build.api/build \"src\" {:main (quote ${cljsMain}) :optimizations :whitespace :output-dir \"tmp\" :output-to \"target/public/frontend.js\"})"
+      -e "(cljs.build.api/build \"src\" {:main (quote ${cljsMain}) :optimizations :whitespace :output-dir \"tmp\" :output-to \"target/main.js\"})"
     java -cp $BUILD_CLASSPATH -Dclojure.compile.path=target clojure.lang.Compile ${mainClass}
     cp -r html/* target
   '';
