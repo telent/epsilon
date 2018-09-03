@@ -135,8 +135,9 @@
 (defn tag-handler [req] (jr {:tags []}))
 
 (defn static-files-handler [req]
-  (let [path (str/replace (:uri req) #"\A/target" "")]
-    (ring.util.response/file-response path {:root "target"})))
+  (let [path (:uri req)
+        defaulted-path (if (.endsWith path "/") (str path "index.html") path)]
+    (ring.util.response/resource-response (subs defaulted-path 1))))
 
 (defn handler-by-uri [uri]
   (let [handlers
@@ -144,8 +145,9 @@
          ["/raw" raw-handler]
          ["/search" search-handler]
          ["/show" show-handler]
-         ["/target" static-files-handler]
-         ["/tag" tag-handler]]]
+         ["/tag" tag-handler]
+         ["/" static-files-handler]
+         ]]
     (first (filter #(.startsWith uri (first %)) handlers))))
 
 (defn handler [req]

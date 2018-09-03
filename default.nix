@@ -1,8 +1,6 @@
 { pkgs ? import <nixpkgs> {} } :
 with pkgs;
-let sourceFilesOnly = path: type:
-    !((baseNameOf path == "var") ||
-      (baseNameOf path == "target"));
+let
   depSpecs = builtins.fromJSON (builtins.readFile ./deps.json);
   mapJars = builtins.foldl'
    (m: a: m // builtins.listToAttrs
@@ -38,21 +36,19 @@ in stdenv.mkDerivation rec {
   sourceRoot = "epsilon";
   nativeBuildInputs = [ clojure openjdk makeWrapper ];
   buildPhase = ''
-    pwd
-    ls -l
-    set -x
     export BUILD_CLASSPATH=src:generated:${CLASSPATH}
-    mkdir -p out tmp 
+    mkdir -p target tmp
     CLJ_CONFIG=. CLJ_CACHE=. clojure -Scp build:$CLASSPATH -A:build -m hiccupize-icons ${icons}/icons
     java -cp $BUILD_CLASSPATH clojure.main  \
       -e '(require (quote cljs.build.api))' \
-      -e "(cljs.build.api/build \"src\" {:main (quote ${cljsMain}) :optimizations :whitespace :output-dir \"tmp\" :output-to \"out/public/frontend.js\"})"
-    java -cp $BUILD_CLASSPATH -Dclojure.compile.path=out clojure.lang.Compile ${mainClass}
+      -e "(cljs.build.api/build \"src\" {:main (quote ${cljsMain}) :optimizations :whitespace :output-dir \"tmp\" :output-to \"target/public/frontend.js\"})"
+    java -cp $BUILD_CLASSPATH -Dclojure.compile.path=target clojure.lang.Compile ${mainClass}
+    cp -r html/* target
   '';
   installPhase = ''
     mkdir -p $out
     mkdir -p $out/share/java
-    jar cef ${mainClass} $out/share/java/$name.jar -C out  .
+    jar cef ${mainClass} $out/share/java/$name.jar -C target  .
     mkdir -p $out/bin
     makeWrapper ${jre_headless}/bin/java $out/bin/$name \
       --add-flags "-cp ${CLASSPATH}:$out/share/java/$name.jar" \
