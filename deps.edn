@@ -11,7 +11,7 @@
    :extra-paths ["build"]}
   :build
   {:extra-deps
-   {org.clojure/data.xml {:mvn/version "0.2.0-alpha5" :exclusions [org.clojure/clojure]}}
+   {org.clojure/data.xml {:mvn/version "0.0.8" :exclusions [org.clojure/clojure]}}
    :extra-paths ["build"]}
   :dev
   {:extra-deps
