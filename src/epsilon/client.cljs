@@ -259,14 +259,19 @@
   (let [[_ attrs & content]  (hiccup/parse-html (:content p))]
     (into [:div attrs] content)))
 
+(defn download-link [part message-id]
+  [:div.attachment {:key (:id part)}
+   [:a {:href (str "/raw?"
+                   "id=" message-id "&"
+                   "content-type=" (:content-type part) "&"
+                   "part=" (:id part))
+        :target "_download"} "Download " (:content-type part) " attachment " (:filename part)]])
 
 (defmethod render-message-part "application/octet-stream" [m p]
-  [:div.attachment {:key (:id p)}
-   [:a {:href (str "/raw?"
-                   "id=" (:id m) "&"
-                   "content-type=" (:content-type p) "&"
-                   "part=" (:id p))
-        :target "_download"} "Download " (:content-type p) " attachment " (:filename p)]])
+  (download-link p (:id m)))
+
+(defmethod render-message-part "application/pdf" [m p]
+  (download-link p (:id m)))
 
 (defmethod render-message-part :default [m p]
   [:div {:key (:id p)} [:pre "mime type " (:content-type p) " not supported"]])
