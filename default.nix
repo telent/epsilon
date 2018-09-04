@@ -1,6 +1,8 @@
 { pkgs ? import <nixpkgs> {} } :
 with pkgs;
-let
+let sourceFilesOnly = path: type:
+    ! ((lib.hasPrefix "generated" (toString path)) ||
+       (lib.hasPrefix "target" (toString path))) ;
   depSpecs = builtins.fromJSON (builtins.readFile ./deps.json);
   mapJars = builtins.foldl'
    (m: a: m // builtins.listToAttrs
@@ -26,13 +28,8 @@ in stdenv.mkDerivation rec {
   name = "epsilon";
   mainClass = "epsilon.server";
   cljsMain = "epsilon.client";
-  src = let s = fetchFromGitHub {
-    name = "epsilon";
-    owner = "telent";
-    repo = "epsilon";
-    rev = "e1a91108f1400c35c131473a8f7aa6a1daf38d8b";
-    sha256 = "0ri88n51ddb27j74scjrjdjqs4srf7migcryifihn4jc10b7q3vz";
-  }; in [s icons];
+  src = let s = builtins.filterSource sourceFilesOnly ./.;
+   in [s icons];
   sourceRoot = "epsilon";
   nativeBuildInputs = [ clojure openjdk makeWrapper ];
   buildPhase = ''
