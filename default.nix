@@ -28,9 +28,7 @@ in stdenv.mkDerivation rec {
   name = "epsilon";
   mainClass = "epsilon.server";
   cljsMain = "epsilon.client";
-  src = let s = builtins.filterSource sourceFilesOnly ./.;
-   in [s icons];
-  sourceRoot = "epsilon";
+  src = builtins.filterSource sourceFilesOnly ./.;
   nativeBuildInputs = [ clojure openjdk makeWrapper ];
   buildPhase = ''
     export BUILD_CLASSPATH=src:generated:${CLASSPATH}
