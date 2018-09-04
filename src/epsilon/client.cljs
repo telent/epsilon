@@ -108,7 +108,8 @@
 (rf/reg-event-db
  :new-suggestions-received-error
  (fn [db [_ err]]
-   (println "suggestions error" err)))
+   (println "suggestions error" err)
+   db))
 
 (rf/reg-event-fx
  :view-thread-requested
