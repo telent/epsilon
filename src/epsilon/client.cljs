@@ -273,6 +273,12 @@
 (defmethod render-message-part "application/pdf" [m p]
   (download-link p (:id m)))
 
+
+(defmethod render-message-part "multipart/related" [m p]
+  (when-let [s (:start p)]
+    (println "ignoring start param " s))
+  (render-message-part m (first (:content p))))
+
 (defmethod render-message-part :default [m p]
   [:div {:key (:id p)} [:pre "mime type " (:content-type p) " not supported"]])
 
