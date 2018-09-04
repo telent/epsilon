@@ -94,11 +94,16 @@
   (case (node-type el)
     :descend
     (let [tag (keyword (str/lower-case (.-tagName el)))]
-      (if (safe-tags tag)
-        (into [tag
-               (safe-attributes tag el (el-attributes el))]
-              (map virtualize-dom-element (array-seq (.-childNodes el))))
-        [:span {} "["  (.-tagName el) " redacted]"]))
+      (cond (safe-tags tag)
+            (into [tag
+                   (safe-attributes tag el (el-attributes el))]
+                  (map virtualize-dom-element (array-seq (.-childNodes el))))
+            (= (type el) js/HTMLUnknownElement)
+            (into [:span.unknown {}]
+                  (map virtualize-dom-element (array-seq (.-childNodes el))))
+            true
+            (do (.log js/console el)
+                [:span {} "["  (.-tagName el) " redacted]"])))
     :text-content
     (.-textContent el)
     ""))
