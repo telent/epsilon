@@ -1,8 +1,6 @@
 (set-env!
-  :resource-paths #{"src" "html" "generated"}
+  :resource-paths #{"src" "build" "html" "generated"}
   :dependencies '[
-                  [adzerk/boot-cljs "LATEST" :scope "test"]
-                  [adzerk/boot-cljs-repl "0.3.3" :scope "test"]
                   [aleph "0.4.6"]
                   [cheshire "5.8.0"]
                   [cljs-ajax "0.7.4"]
@@ -18,11 +16,9 @@
                   ])
 
 
-(require '[adzerk.boot-cljs          :refer [cljs]]
-         '[adzerk.boot-cljs-repl     :refer [cljs-repl]])
-
+(require '[boot.tasks.cljs          :refer [cljs]])
 
 (task-options!
  {:cljs {:optimizations :whitespace
-         :output-dir "target/"
+         :output-to "target/main.js"
          }})
