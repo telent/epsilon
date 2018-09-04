@@ -34,7 +34,6 @@
              (str/join " " overridden)
              (get :viewBox attrs))
         attrs (assoc attrs :viewBox vb)]
-    (println attrs)
     (into [name attrs] kids)))
 
 ;; -- Domino 1 - Event Dispatch -----------------------------------------------
