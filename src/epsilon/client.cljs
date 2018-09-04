@@ -323,16 +323,15 @@
 
 (defn menu [title & items]
   [:div.titleblock
-   [:div.menu (map #(vector :div.item %)  items)]
+   (into [:div.menu] items)
    title])
-
 
 (defn search-page []
   [:div
    (menu [:span.title "Epsilon"]
-         [:span.clickable {:key :home :on-click #(rf/dispatch [:search-term-updated ""])}
+         [:div.item.clickable {:key :home :on-click #(rf/dispatch [:search-term-updated ""])}
           (merge-attrs epsilon.logo/svg {:width 30 :height 30})]
-         [:span.clickable {:key :refresh :on-click #(.log js/console "refresh")}
+         [:div.item.clickable {:key :refresh :on-click #(.log js/console "refresh")}
           (merge-attrs epsilon.icons.refresh-cw.svg {:view-box [0 0 25 25] :width 30 :height 30})])
    [:div.content
     [:div.search
