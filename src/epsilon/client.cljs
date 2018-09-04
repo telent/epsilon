@@ -55,12 +55,12 @@
 
 (rf/reg-event-fx
  :search-requested
- (fn [{:keys [db]} [_ term]]
+ (fn [{:keys [db]} [_ term offset]]
    {:db (-> db (dissoc :show-suggestions :thread-id :thread :search-result))
     :http-xhrio
     {:method          :get
      :uri             "/search"
-     :params 	      {:q term :limit 10}
+     :params 	      {:q term :limit 25}
      :format          (ajax/url-request-format)
      :response-format (ajax/json-response-format {:keywords? true})
      :on-success      [:search-result]
@@ -176,7 +176,7 @@
     [:div.search-term-input
      [:form {:on-submit
              (fn [e]
-               (rf/dispatch [:search-requested term])
+               (rf/dispatch [:search-requested term 0])
                (.stopPropagation e)
                (.preventDefault e))}
       [:div.widget ;{:style {:position "relative"}}
@@ -217,7 +217,7 @@
              :on-click
              (fn [e]
                (rf/dispatch [:show-suggestions false])
-               (rf/dispatch [:search-requested (urlable-term suggestion)]))
+               (rf/dispatch [:search-requested (urlable-term suggestion) 0]))
              }
             (html-for-suggestion suggestion)])
          @(rf/subscribe [:suggestions]))]])
@@ -371,7 +371,7 @@
 (defn ^:export run
   []
   (rf/dispatch-sync [:initialize])     ;; puts a value into application state
-  (rf/dispatch-sync [:search-requested "richer"])
+  (rf/dispatch-sync [:search-requested "date:yesterday.." 0])
 ;  (rf/dispatch [:view-thread-requested "00000000000067cd"])
   (reagent/render [ui]              ;; mount the application's ui into '<div id="app" />'
                   (js/document.getElementById "app")))
