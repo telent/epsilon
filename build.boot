@@ -18,6 +18,12 @@
 
 (require '[boot.tasks.cljs          :refer [cljs]])
 
+(deftask use-target
+  "Profile setup for running repl"
+  []
+  (set-env! :resource-paths #(conj % "target"))
+  identity)
+
 (task-options!
  {:cljs {:optimizations :whitespace
          :output-to "target/main.js"
