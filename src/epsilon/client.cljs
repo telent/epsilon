@@ -306,20 +306,21 @@
         :title address}
        (:name parsed)])))
 
+(defn el-for-tag [text]
+  [:div.tag [:span.angle] [:span.name [:span text]]])
+
+
+
 (defn render-message [m]
   [:div.message {:key (:id m)}
-   (if (or true (:collapse-headers m))
-     (let [h (:headers m)]
-       [:div.headers.compact-headers
-        [:div
-         (el-for-email-address (:From h))
-         " " r-arrow " "
-         (el-for-email-address (:To h))]
-        [:div (:Date h)]])
-     [:div.headers
-      (map (fn [[k v]] [:div.header {:key k} [:span.name (name k) ":"] v])
-           (:headers m))])
-   [:div (map (fn [tag] [:span.tag {:key tag} tag]) (:tags m))]
+   (let [h (:headers m)]
+     [:div.headers.compact-headers
+      [:div
+       (el-for-email-address (:From h))
+       " " r-arrow " "
+       (el-for-email-address (:To h))]
+      [:div (:Date h)]
+      [:div (map el-for-tag (:tags m))]])
    [:div.message-body (map (partial render-message-part m) (:body m))]])
 
 (defn render-thread [[frst & replies]]

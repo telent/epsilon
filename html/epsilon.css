@@ -4,6 +4,25 @@ body {
     overflow-x: hidden;
 }
 
+div.tag {     display: inline-block; padding-right: 0.7em; padding-top: 0.4em; font-size: 14px }
+
+div.tag .angle {
+    height: 0px;
+    width: 0px;
+    display: inline-block;
+    border-color: transparent #fdd transparent transparent;
+    border-style: solid;
+    border-width: 10px 10px 10px 0;
+}
+div.tag .name {
+    height: 16px;
+    display: inline-block;
+    padding: 2px; margin: 0;
+    background-color: #fdd;
+    vertical-align: top;
+}
+div.tag .name span { position: relative; top: -2px; }
+
 body,div,form {
     margin:0;
     padding:0;
@@ -124,11 +143,6 @@ div.search-results .authors {
     color: #222;
 }
 
-span.tag {
-    display: inline-block; font-size: 80%; background-color: #eee;
-    padding: 2px 4px; margin: 0.3em;
-    border-width: 1px; border-color: #222; border-style: solid;
-}
 
 .thread {
     background-color: #eee;
