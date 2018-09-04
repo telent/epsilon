@@ -38,10 +38,11 @@ body,div,form {
 
 
 .titleblock .title {
-    vertical-align: top;
-    padding-left: 1em;
-    padding-top: 8px;
     font-size: 22px;
+    vertical-align: top;
+    padding-top: 8px;
+    padding-left: 22px;
+    display: inline-block;
 }
 
 .content {

@@ -361,10 +361,13 @@
   [:div
    (menu
     [:span {:style {:font-size "16px" :vertical-align :top
+                    :display "inline-block"
+                    :padding-top "4px"
+                    :padding-left "22px"
                     :margin-top "4px" }}
      @(rf/subscribe [:thread-subject])]
-    [:span.clickable {:key :back :on-click #(rf/dispatch [:thread-retrieved nil])}
-     (merge-attrs epsilon.icons.chevrons-left/svg {:view-box [0 4 22 15] :width 30 :height 30})])
+    [:div.item.clickable {:key :back :on-click #(rf/dispatch [:thread-retrieved nil])}
+     (merge-attrs epsilon.icons.chevrons-left/svg {:view-box [5 4 18 18] :width 30 :height 30})])
    [:div.thread.content
     [thread-pane]]])
 
