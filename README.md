@@ -39,6 +39,8 @@ and separately
 
 ```
 tab2$ boot use-target cider repl
+
+epsilon.server=> (run {})
 ```
 
 ## Dependencies

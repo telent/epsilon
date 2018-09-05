@@ -25,6 +25,7 @@
   identity)
 
 (task-options!
- {:cljs {:optimizations :whitespace
-         :output-to "target/main.js"
-         }})
+ repl {:init-ns 'epsilon.server}
+ cljs {:optimizations :whitespace
+       :output-to "target/main.js"
+      })
