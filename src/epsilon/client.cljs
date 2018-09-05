@@ -232,7 +232,8 @@
              {:key (:thread r)
               :on-click #(rf/dispatch [:view-thread-requested (:thread r)])}
              [:div.subject
-              [:span.subject (:subject r)]]
+              [:span.subject (:subject r)]
+              [:span.tags.threadview (map el-for-tag (:tags r))]]
              [:div
               [:span.authors (:authors r)]
               [:span.when [:div (:date_relative r)]]]])
@@ -320,7 +321,7 @@
        " " r-arrow " "
        (el-for-email-address (:To h))]
       [:div (:Date h)]
-      [:div (map el-for-tag (:tags m))]])
+      [:div.tags.headers (map el-for-tag (:tags m))]])
    [:div.message-body (map (partial render-message-part m) (:body m))]])
 
 (defn render-thread [[frst & replies]]

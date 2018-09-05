@@ -4,7 +4,19 @@ body {
     overflow-x: hidden;
 }
 
-div.tag {     display: inline-block; padding-right: 0.7em; padding-top: 0.4em; font-size: 14px }
+.tags.threadview {
+    --tag-height: 14px;
+}
+
+.tags.headers {
+    --tag-height: 20px;
+}
+    
+div.tag {
+    --height: var(--tag-height, 14px);
+    display: inline-block; padding-left: 0.7em;
+    font-size: calc(var(--height) * 0.7);
+}
 
 div.tag .angle {
     height: 0px;
@@ -12,12 +24,14 @@ div.tag .angle {
     display: inline-block;
     border-color: transparent #fdd transparent transparent;
     border-style: solid;
-    border-width: 10px 10px 10px 0;
+    --bw: calc(var(--height) / 2);
+    border-width: var(--bw) var(--bw) var(--bw) 0;
 }
 div.tag .name {
-    height: 16px;
+    height: calc(var(--height) * 0.8);
     display: inline-block;
-    padding: 2px; margin: 0;
+    padding: calc(var(--height) * 0.1);
+    margin: 0;
     background-color: #fdd;
     vertical-align: top;
 }
