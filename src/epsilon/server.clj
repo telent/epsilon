@@ -7,6 +7,7 @@
    [clojure.string :as str]
    ring.util.codec
    ring.util.response
+   ring.middleware.content-type
    )
   (:gen-class))
 
@@ -136,8 +137,10 @@
 
 (defn static-files-handler [req]
   (let [path (:uri req)
-        defaulted-path (if (.endsWith path "/") (str path "index.html") path)]
-    (ring.util.response/resource-response (subs defaulted-path 1))))
+        req (assoc req :uri (if (.endsWith path "/") (str path "index.html") path))]
+    (ring.middleware.content-type/content-type-response
+     (ring.util.response/resource-response (subs (:uri req) 1))
+     req)))
 
 (defn handler-by-uri [uri]
   (let [handlers
