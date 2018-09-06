@@ -121,6 +121,12 @@
                  :on-success      [:thread-retrieved]
                  :on-failure      [:thread-retrieve-failed]}}))
 
+(re-frame.core/reg-event-fx
+  :remove-tag
+  (fn [{:keys [db]} [_ index tag]]
+    {:db (update-in db [:thread index :tags] disj tag)}))
+
+
 (defn unnest-thread [flattened [frst & replies]]
   (let [flattened (conj flattened frst)]
     (reduce (fn [a r] (unnest-thread a r)) flattened (first replies))))
@@ -129,8 +135,7 @@
  :thread-retrieved
  (fn [db [_ result]]
    (let [flattened (unnest-thread [] (-> result first first))]
-     (println (map :id flattened))
-     (assoc db :thread  flattened))))
+     (assoc db :thread (mapv #(assoc % :tags (set (:tags %)))  flattened)))))
 
 (rf/reg-event-db
  :thread-retrieve-failed
@@ -227,8 +232,9 @@
             (html-for-suggestion suggestion)])
          @(rf/subscribe [:suggestions]))]])
 
-(defn el-for-tag [text]
-  [:div.tag [:span.angle] [:span.name [:span text]]])
+(defn el-for-tag
+  ([text] (el-for-tag text nil))
+  ([text onclick] [:div.tag {:on-click onclick} [:span.angle] [:span.name [:span text]]]))
 
 (defn search-result
   []
@@ -324,12 +330,14 @@
        " " r-arrow " "
        (el-for-email-address (:To h))]
       [:div (:Date h)]
-      [:div.tags.headers (map el-for-tag (:tags m))]])
+      [:div.tags.headers
+       (map #(el-for-tag % (fn [e] #_ (rf/dispatch [:remove-tag index %])))
+            (:tags m))]])
    [:div.message-body (map (partial render-message-part m) (:body m))]])
 
 (defn render-thread [messages]
   [:div.thread {:key (str "th:" (:id (first messages)))}
-   (map render-message messages)])
+   (map render-message messages (range))])
 
 
 (defn thread-pane
