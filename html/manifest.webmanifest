@@ -1,0 +1,23 @@
+{
+  "name": "Epsilon",
+  "short_name": "Epsilon Email",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fff",
+  "description": "Mobile webmail interface for Notmuch Mail",
+  "icons": [{
+    "src": "epsilon.svg",
+    "type": "image/svg+xml",
+    "sizes": "any 48x48 72x72 96x96 144x144 192x192 512x512"
+  },{
+    "src": "logo-144.png",
+    "type": "image/png",
+    "sizes": "144x144"
+  },{
+    "src": "logo-512.png",
+    "type": "image/png",
+    "sizes": "512x512"
+  }],
+  "theme_color": "#505020",
+  "scope": "/"
+}

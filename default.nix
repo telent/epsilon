@@ -29,9 +29,12 @@ in stdenv.mkDerivation rec {
   mainClass = "epsilon.server";
   cljsMain = "epsilon.client";
   src = builtins.filterSource sourceFilesOnly ./.;
-  nativeBuildInputs = [ clojure openjdk makeWrapper ];
+  nativeBuildInputs = [ clojure openjdk makeWrapper gnome3.librsvg ];
   makeIcons = ''
     CLJ_CONFIG=. CLJ_CACHE=. clojure -Scp build:$CLASSPATH -A:build -m hiccupize-icons ${icons}/icons;
+    for w in 144 512; do
+      rsvg-convert -w $w -a  -b '#552' --output=html/logo-''${w}.png html/epsilon.svg
+    done
   '';
   buildPhase = ''
     export BUILD_CLASSPATH=src:generated:${CLASSPATH}
