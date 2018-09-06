@@ -30,10 +30,13 @@ in stdenv.mkDerivation rec {
   cljsMain = "epsilon.client";
   src = builtins.filterSource sourceFilesOnly ./.;
   nativeBuildInputs = [ clojure openjdk makeWrapper ];
+  makeIcons = ''
+    CLJ_CONFIG=. CLJ_CACHE=. clojure -Scp build:$CLASSPATH -A:build -m hiccupize-icons ${icons}/icons;
+  '';
   buildPhase = ''
     export BUILD_CLASSPATH=src:generated:${CLASSPATH}
     mkdir -p target tmp
-    CLJ_CONFIG=. CLJ_CACHE=. clojure -Scp build:$CLASSPATH -A:build -m hiccupize-icons ${icons}/icons
+    ${makeIcons}
     java -cp $BUILD_CLASSPATH clojure.main  \
       -e '(require (quote cljs.build.api))' \
       -e "(cljs.build.api/build \"src\" {:main (quote ${cljsMain}) :optimizations :whitespace :output-dir \"tmp\" :output-to \"target/main.js\"})"
