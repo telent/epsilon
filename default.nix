@@ -23,13 +23,15 @@ let sourceFilesOnly = path: type:
     rev = "2ee03d261c0b342a30f1a0767aa62ed116d9a208";
     sha256 = "1vajpx7867aff9b4chbf2p83fqlpcnclxm710k5srvvkbgwfy8k2";
   };
+  # location of librsvg changes some time after 18.03 I think
+  rsvg = if (pkgs.gnome3 ? librsvg) then pkgs.gnome3.librsvg else pkgs.librsvg;
 in stdenv.mkDerivation rec {
   CLASSPATH = (lib.concatStrings (lib.intersperse ":" jarPaths));
   name = "epsilon";
   mainClass = "epsilon.server";
   cljsMain = "epsilon.client";
   src = builtins.filterSource sourceFilesOnly ./.;
-  nativeBuildInputs = [ clojure openjdk makeWrapper gnome3.librsvg ];
+  nativeBuildInputs = [ clojure openjdk makeWrapper rsvg ];
   makeIcons = ''
     CLJ_CONFIG=. CLJ_CACHE=. clojure -Scp build:$CLASSPATH -A:build -m hiccupize-icons ${icons}/icons;
     for w in 144 512; do
