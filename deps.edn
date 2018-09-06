@@ -15,9 +15,7 @@
    :extra-paths ["build"]}
   :dev
   {:extra-deps
-   {adzerk/boot-cljs {:mvn/version "LATEST"}
-    adzerk/boot-cljs-repl {:mvn/version "0.3.3"}
-    com.cemerick/piggieback {:mvn/version "0.2.1"}
+   {com.cemerick/piggieback {:mvn/version "0.2.1"}
     weasel {:mvn/version "0.7.0"}}}}
  ;; don't forget to run build/nixtract.clj after updating this file
  :deps
