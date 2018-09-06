@@ -28,7 +28,7 @@ You will need to have installed:
 
 * nodejs (icons are installed from an npm package)
 * clojure 1.9 with the cli tools (`clojure` should be on your path)
-* [boot-clj(http://boot-clj.com/)
+* [boot-clj](http://boot-clj.com/)
 
 (On Nix you can do this using `nix-shell`)
 
