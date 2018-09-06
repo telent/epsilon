@@ -222,6 +222,8 @@
             (html-for-suggestion suggestion)])
          @(rf/subscribe [:suggestions]))]])
 
+(defn el-for-tag [text]
+  [:div.tag [:span.angle] [:span.name [:span text]]])
 
 (defn search-result
   []
@@ -307,8 +309,7 @@
         :title address}
        (:name parsed)])))
 
-(defn el-for-tag [text]
-  [:div.tag [:span.angle] [:span.name [:span text]]])
+
 
 
 
