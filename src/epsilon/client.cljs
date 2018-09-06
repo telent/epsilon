@@ -101,7 +101,6 @@
 (rf/reg-event-db
  :new-suggestions-received
  (fn [db [_ result]]
-   (println result)
    (assoc db :suggestions result)))
 
 (rf/reg-event-db
@@ -122,10 +121,16 @@
                  :on-success      [:thread-retrieved]
                  :on-failure      [:thread-retrieve-failed]}}))
 
+(defn unnest-thread [flattened [frst & replies]]
+  (let [flattened (conj flattened frst)]
+    (reduce (fn [a r] (unnest-thread a r)) flattened (first replies))))
+
 (rf/reg-event-db
  :thread-retrieved
  (fn [db [_ result]]
-   (assoc db :thread result)))
+   (let [flattened (unnest-thread [] (-> result first first))]
+     (println (map :id flattened))
+     (assoc db :thread  flattened))))
 
 (rf/reg-event-db
  :thread-retrieve-failed
@@ -310,9 +315,6 @@
        (:name parsed)])))
 
 
-
-
-
 (defn render-message [m]
   [:div.message {:key (:id m)}
    (let [h (:headers m)]
@@ -325,14 +327,14 @@
       [:div.tags.headers (map el-for-tag (:tags m))]])
    [:div.message-body (map (partial render-message-part m) (:body m))]])
 
-(defn render-thread [[frst & replies]]
-  [:div.thread {:key (str "th:" (:id frst))}
-   (render-message frst)
-   (map render-thread (first replies))])
+(defn render-thread [messages]
+  [:div.thread {:key (str "th:" (:id (first messages)))}
+   (map render-message messages)])
+
 
 (defn thread-pane
   []
-  (let [m (first (first  @(rf/subscribe [:thread])))]
+  (let [m @(rf/subscribe [:thread])]
     (render-thread m)))
 
 (defn menu [title & items]
