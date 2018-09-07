@@ -248,7 +248,7 @@
               :on-click #(rf/dispatch [:view-thread-requested (:thread r)])}
              [:div.subject
               [:span.subject (:subject r)]
-              [:span.tags.threadview (map el-for-tag (:tags r))]]
+              (into [:span.tags.threadview] (map el-for-tag (:tags r)))]
              [:div
               [:span.authors (:authors r)]
               [:span.when [:div (:date_relative r)]]]])
@@ -263,10 +263,10 @@
 
 (defmethod render-message-part "multipart/mixed" [m p]
   (let [c (:content p)]
-    (map (partial render-message-part m) c)))
+    (into [:div] (map (partial render-message-part m) c))))
 
 (defmethod render-message-part "text/plain" [m p]
-  [:div {:key (:id p)} [:pre (:content p)]])
+  [:div {} [:pre (:content p)]])
 
 ;; FIXME Probably we should do HTML parsing when the message is fetched, not every time
 ;; we render it.
@@ -334,10 +334,10 @@
        " " r-arrow " "
        (el-for-email-address (:To h))]
       [:div (:Date h)]
-      [:div.tags.headers
-       (map #(el-for-tag % (fn [e] #_ (rf/dispatch [:remove-tag index %])))
-            (:tags m))]])
-   [:div.message-body (map (partial render-message-part m) (:body m))]])
+      (into [:div.tags.headers {}]
+            (map #(el-for-tag % (fn [e] #_ (rf/dispatch [:remove-tag index %])))
+                 (:tags m)))])
+   (into [:div.message-body {}] (map (partial render-message-part m) (:body m)))])
 
 (defn render-thread [messages]
   [:div.thread {:key (str "th:" (:id (first messages)))}
@@ -370,8 +370,8 @@
     (render-thread m)))
 
 (defn menu [title & items]
-  [:div.titleblock
-   (into [:div.menu] items)
+  [:div.titleblock {}
+   (into [:div.menu {}] items)
    title])
 
 (defn search-page []
