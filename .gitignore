@@ -1,2 +1,8 @@
 target/
 .nrepl-*
+var/
+generated/
+result
+html/*.png
+package-lock.json
+.cpcache
