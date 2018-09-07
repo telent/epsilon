@@ -2,6 +2,7 @@
 with pkgs;
 let sourceFilesOnly = path: type:
     ! ((lib.hasPrefix "generated" (toString path)) ||
+       (lib.hasPrefix "var" (toString path)) ||
        (lib.hasPrefix "target" (toString path))) ;
   depSpecs = builtins.fromJSON (builtins.readFile ./deps.json);
   mapJars = builtins.foldl'
