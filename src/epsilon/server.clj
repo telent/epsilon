@@ -135,8 +135,6 @@
       (fail (assoc ret :error "notmuch returned non-zero")))))
 
 
-(defn tag-handler [req] (jr {:tags []}))
-
 (defn static-files-handler [req]
   (let [path (:uri req)
         req (assoc req :uri (if (.endsWith path "/") (str path "index.html") path))]
@@ -150,7 +148,6 @@
          ["/raw" raw-handler]
          ["/search" search-handler]
          ["/show" show-handler]
-         ["/tag" tag-handler]
          ["/" static-files-handler]
          ]]
     (first (filter #(.startsWith uri (first %)) handlers))))

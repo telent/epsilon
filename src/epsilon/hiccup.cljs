@@ -111,5 +111,4 @@
 (defn parse-html [string]
   (let [dom (. (js/DOMParser.) parseFromString string "text/html")
         body (.-body dom)]
-    (aset js/window "foo" dom)
     (virtualize-dom-element body)))
