@@ -121,7 +121,7 @@
                  :on-success      [:thread-retrieved]
                  :on-failure      [:thread-retrieve-failed]}}))
 
-(re-frame.core/reg-event-fx
+(rf/reg-event-fx
   :remove-tag
   (fn [{:keys [db]} [_ index tag]]
     {:db (update-in db [:thread index :tags] disj tag)}))
@@ -321,8 +321,10 @@
        (:name parsed)])))
 
 
-(defn render-message [m]
-  [:div.message {:key (:id m)}
+(defn render-message [m index]
+  [:div.message {:key (:id m)
+                 :data-num index
+                 :data-mid (:id m)}
    (let [h (:headers m)]
      [:div.headers.compact-headers
       [:div
@@ -338,6 +340,26 @@
 (defn render-thread [messages]
   [:div.thread {:key (str "th:" (:id (first messages)))}
    (map render-message messages (range))])
+
+;; XXX this may change?  e.g. if desktop user resizes window, or mobile user
+;; rotates the device
+(def viewport-size
+  [(or (.-innerWidth js/window) (.. js/document documentElement clientWidth))
+   (or (.-innerHeight js/window) (.. js/document documentElement clientHeight))])
+
+(defn bounding-rect [el]
+  (let [bounding (.getBoundingClientRect el)]
+    [(.-left bounding) (.-top bounding)
+     (.-right bounding) (.-bottom bounding)]))
+
+(defn in-viewport? [el]
+  (let [[_ top _ bottom] (bounding-rect el)
+        [_ height] viewport-size]
+    (or
+     (and (> top 0) (< bottom height)) ; within viewport
+     (and (< top 0) (> bottom 0))      ; crosses upper edge of viewport
+     (and (< top height) (> bottom height)) ; crosses lower edge of viewport
+     )))
 
 
 (defn thread-pane
@@ -369,6 +391,11 @@
     [:div {:id "threads"}
      [search-result]]]])
 
+(defn remove-unread-marks [thread-el]
+  (let [message-els (.getElementsByClassName thread-el "message")
+        visible-els (filter in-viewport? (array-seq message-els))]
+    (run! #(rf/dispatch [:remove-tag (js/parseInt (.. % -dataset -num)) "unread"])
+          visible-els)))
 
 (defn thread-page []
   [:div
@@ -382,6 +409,7 @@
     [:div.item.clickable {:key :back :on-click #(rf/dispatch [:thread-retrieved nil])}
      (merge-attrs epsilon.icons.chevrons-left/svg {:view-box [5 4 18 18] :width 30 :height 30})])
    [:div.thread.content
+    {:on-scroll #(remove-unread-marks (.-target %))}
     [thread-pane]]])
 
 
