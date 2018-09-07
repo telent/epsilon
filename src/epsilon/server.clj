@@ -50,11 +50,13 @@
   ["show" "--format=raw" (str "--part=" part) (str "id:" message)
    :out-enc :bytes])
 
+(def notmuch-bin
+  (or (System/getenv "NOTMUCH")
+      (str (System/getenv "HOME") "/.nix-profile/bin/notmuch")))
+
 (defn notmuch [& args]
   (let [args (apply notmuch-args  args)]
-    (apply shell/sh
-           (str (System/getenv "HOME") "/.nix-profile/bin/notmuch")
-           args)))
+    (apply shell/sh notmuch-bin args)))
 
 (defn strip-prefix [prefix term]
   (if (.startsWith term (str prefix ":"))

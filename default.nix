@@ -1,9 +1,10 @@
 { pkgs ? import <nixpkgs> {} } :
 with pkgs;
-let sourceFilesOnly = path: type:
-    ! ((lib.hasPrefix "generated" (toString path)) ||
-       (lib.hasPrefix "var" (toString path)) ||
-       (lib.hasPrefix "target" (toString path))) ;
+let sourceFilesOnly = src: path: type:
+    let rel = lib.removePrefix (toString src + "/") (toString path);
+    in ! ((lib.hasPrefix "generated" rel) ||
+          (lib.hasPrefix "var" rel) ||
+          (lib.hasPrefix "target" rel)) ;
   depSpecs = builtins.fromJSON (builtins.readFile ./deps.json);
   mapJars = builtins.foldl'
    (m: a: m // builtins.listToAttrs
@@ -28,10 +29,12 @@ let sourceFilesOnly = path: type:
   rsvg = if (pkgs.gnome3 ? librsvg) then pkgs.gnome3.librsvg else pkgs.librsvg;
 in stdenv.mkDerivation rec {
   CLASSPATH = (lib.concatStrings (lib.intersperse ":" jarPaths));
+  NOTMUCH = "${pkgs.notmuch}/bin/notmuch";
   name = "epsilon";
   mainClass = "epsilon.server";
   cljsMain = "epsilon.client";
-  src = builtins.filterSource sourceFilesOnly ./.;
+  src = builtins.filterSource (sourceFilesOnly ./.) ./.;
+  buildInputs = [ pkgs.notmuch ];
   nativeBuildInputs = [ clojure openjdk makeWrapper rsvg ];
   makeIcons = ''
     CLJ_CONFIG=. CLJ_CACHE=. clojure -Scp build:$CLASSPATH -A:build -m hiccupize-icons ${icons}/icons;
