@@ -134,8 +134,10 @@
 (rf/reg-event-db
  :thread-retrieved
  (fn [db [_ result]]
-   (let [flattened (unnest-thread [] (-> result first first))]
-     (assoc db :thread (mapv #(assoc % :tags (set (:tags %)))  flattened)))))
+   (if result
+     (let [flattened (unnest-thread [] (-> result first first))]
+       (assoc db :thread (mapv #(assoc % :tags (set (:tags %)))  flattened)))
+     (assoc db :thread nil))))
 
 (rf/reg-event-db
  :thread-retrieve-failed
