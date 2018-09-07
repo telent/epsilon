@@ -5,7 +5,7 @@
    [cheshire.core :as json]
    [clojure.java.shell :as shell]
    [clojure.string :as str]
-   ring.util.codec
+   [ring.util.codec :refer [url-decode]]
    ring.util.response
    ring.middleware.content-type
    )
@@ -50,12 +50,18 @@
   ["show" "--format=raw" (str "--part=" part) (str "id:" message)
    :out-enc :bytes])
 
+(defmethod notmuch-args :tags [_ message-id {:keys [add remove]}]
+  (into []
+        `("tag" ~@(map #(str "+" %) add)  ~@(map #(str "-" %) remove)
+          "--" ~(str "id:" message-id))))
+
 (def notmuch-bin
   (or (System/getenv "NOTMUCH")
       (str (System/getenv "HOME") "/.nix-profile/bin/notmuch")))
 
 (defn notmuch [& args]
   (let [args (apply notmuch-args  args)]
+    (apply println "running " notmuch-bin args)
     (apply shell/sh notmuch-bin args)))
 
 (defn strip-prefix [prefix term]
@@ -142,12 +148,26 @@
      (ring.util.response/resource-response (subs (:uri req) 1))
      req)))
 
+;; /messages/CAMViAb0Q%2B4zxWFNsRB%3D4F86riFjYFU_i%2BhWzzoPa6BaKS15sdw%40mail.gmail.com/tags/unread
+(defn message-handler [req]
+  (let [[_ _ id k v] (map url-decode (str/split (:uri req) #"/"))
+        method (:request-method req)]
+    (println [id k v method])
+    (cond
+      (and (= method :delete) (= k "tags"))
+      (let [ret (notmuch :tags id {:remove [v]})]
+        (if (zero? (:exit ret))
+          (jr (json/generate-string ret))
+          (fail (assoc ret :error "notmuch returned non-zero")))))))
+
+
 (defn handler-by-uri [uri]
   (let [handlers
         [["/completions" completions-handler]
          ["/raw" raw-handler]
          ["/search" search-handler]
          ["/show" show-handler]
+         ["/messages" message-handler]
          ["/" static-files-handler]
          ]]
     (first (filter #(.startsWith uri (first %)) handlers))))

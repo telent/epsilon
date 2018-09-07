@@ -124,8 +124,27 @@
 (rf/reg-event-fx
   :remove-tag
   (fn [{:keys [db]} [_ index tag]]
-    {:db (update-in db [:thread index :tags] disj tag)}))
+    (let [m (get-in db [:thread index])]
+      (when (get-in m [:tags tag])
+        {:db (update-in db [:thread index :tags] disj tag)
+         :http-xhrio {:method :delete
+                      :uri  (str "/messages/" (js/encodeURIComponent (:id m)) "/tags/" tag)
+                      :format (ajax/url-request-format)
+                      :response-format (ajax/json-response-format {:keywords? true})
+                      :on-success      [:xhr-succeeded]
+                      :on-failure      [:xhr-failed]}}))))
 
+(rf/reg-event-db
+ :xhr-succeeded
+ (fn [db [_ result]]
+   (println result)
+   db))
+
+(rf/reg-event-db
+ :xhr-failed
+ (fn [db [_ result]]
+   (println "failed" result)
+   db))
 
 (defn unnest-thread [flattened [frst & replies]]
   (let [flattened (conj flattened frst)]
