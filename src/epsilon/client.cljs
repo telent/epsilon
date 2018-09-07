@@ -398,7 +398,11 @@
    (menu [:span.title "Epsilon"]
          [:div.item.clickable {:key :home :on-click #(rf/dispatch [:search-term-updated ""])}
           (merge-attrs epsilon.logo/svg {:width 30 :height 30})]
-         [:div.item.clickable {:key :refresh :on-click #(.log js/console "refresh")}
+         [:div.item.clickable
+          {:key :refresh
+           :on-click
+           #(rf/dispatch
+             [:search-requested @(rf/subscribe [:search-term])])}
           (merge-attrs epsilon.icons.refresh-cw.svg {:view-box [0 0 25 25] :width 30 :height 30})])
    [:div.content
     [:div.search
@@ -408,7 +412,7 @@
                   (rf/dispatch [:show-suggestions false])
                   (println "blurr"))}
      [search-term-input]
-     (if   @(rf/subscribe [:show-suggestions]) [suggestions])]
+     (if @(rf/subscribe [:show-suggestions]) [suggestions])]
     [:div {:id "threads"}
      [search-result]]]])
 
