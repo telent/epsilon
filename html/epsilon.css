@@ -135,9 +135,11 @@ body,div,form {
 
 
 div.search-results .subject {
-    font-weight: bold;
     color: #555;
     padding-bottom: 3px;
+}
+div.search-results .unread .subject {
+    font-weight: bold;
 }
 
 div.search-results div.result {

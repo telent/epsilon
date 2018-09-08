@@ -262,7 +262,7 @@
   (let [rs @(rf/subscribe [:search-result])]
     [:div.search-results
      (map (fn [r]
-            [:div.result
+            [(if (some #{"unread"} (:tags r)) :div.result.unread :div.result)
              {:key (:thread r)
               :on-click #(rf/dispatch [:view-thread-requested (:thread r)])}
              [:div.subject
