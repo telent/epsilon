@@ -321,19 +321,19 @@
 
 ;; XXX this is not 100% according to rfc 282x or whatever it is now.  More like 30%
 (defn parse-email-address [address]
-  (let [;address (or address "(no address) <>")
-        angles-re #"<([^\>]*)>"
-        parens-re #"\([^\)]*\)"]
-    (if-let [addr-spec (second (re-find angles-re address))]
-      {:addr-spec addr-spec
-       :name (str/trim (str/replace address angles-re ""))}
-      (if-let [name (second (re-find parens-re address))]
-        {:addr-spec (str/trim (str/replace address parens-re ""))
-         :name name}
-        {:addr-spec address :name address}))))
+  (if address
+    (let [angles-re #"<([^\>]*)>"
+          parens-re #"\([^\)]*\)"]
+      (if-let [addr-spec (second (re-find angles-re address))]
+        {:addr-spec addr-spec
+         :name (str/trim (str/replace address angles-re ""))}
+        (if-let [name (second (re-find parens-re address))]
+          {:addr-spec (str/trim (str/replace address parens-re ""))
+           :name name}
+          {:addr-spec address :name address})))))
 
 (defn el-for-email-address [address]
-  (let [parsed (parse-email-address address)]
+  (let [parsed (or (parse-email-address address) {})]
     (if (empty? (:addr-spec parsed))
       [:span "(none)"]
       [:a.email-address
