@@ -195,7 +195,7 @@
 (rf/reg-sub
  :thread-subject
  (fn [db _]
-   (:Subject (:headers (first (first (first (:thread db))))))))
+   (:Subject (:headers (first (:thread db))))))
 
 
 
