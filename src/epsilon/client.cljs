@@ -188,9 +188,24 @@
     (:search-result db)))
 
 (rf/reg-sub
-  :thread
-  (fn [db _]
-    (:thread db)))
+ :thread
+ (fn [db _]
+   (:thread db)))
+
+(rf/reg-sub
+ :thread-message-ids
+ (fn [_ _]
+   (rf/subscribe [:thread]))
+ (fn [thread _]
+   (map :id thread)))
+
+(rf/reg-sub
+ :message
+ (fn [_ _]
+   (rf/subscribe [:thread]))
+ (fn [thread [_ id]]
+   (first (filter (fn [m] (= (:id m) id)) thread))))
+
 
 (rf/reg-sub
  :thread-subject
@@ -342,25 +357,26 @@
        (:name parsed)])))
 
 
-(defn render-message [m index]
-  [:div.message {:key (:id m)
-                 :data-num index
-                 :data-mid (:id m)}
-   (let [h (:headers m)]
-     [:div.headers.compact-headers
-      [:div
-       (el-for-email-address (:From h))
-       " " r-arrow " "
-       (el-for-email-address (:To h))]
-      [:div (:Date h)]
-      (into [:div.tags.headers {}]
-            (map #(el-for-tag % (fn [e] #_ (rf/dispatch [:remove-tag index %])))
-                 (:tags m)))])
-   (into [:div.message-body {}] (map (partial render-message-part m) (:body m)))])
+(defn render-message [message-id index]
+  (let [m @(rf/subscribe [:message message-id])]
+    [:div.message {:key (:id m)
+                   :data-num index
+                   :data-mid (:id m)}
+     (let [h (:headers m)]
+       [:div.headers.compact-headers
+        [:div
+         (el-for-email-address (:From h))
+         " " r-arrow " "
+         (el-for-email-address (:To h))]
+        [:div (:Date h)]
+        (into [:div.tags.headers {}]
+              (map #(el-for-tag % (fn [e]  (rf/dispatch [:remove-tag index %])))
+                   (:tags m)))])
+     (into [:div.message-body {}] (map (partial render-message-part m) (:body m)))]))
 
-(defn render-thread [messages]
-  [:div.thread {:key (str "th:" (:id (first messages)))}
-   (map render-message messages (range))])
+(defn render-thread [message-ids]
+  (into [:div.thread {}]
+        (map render-message message-ids (range))))
 
 ;; XXX this may change?  e.g. if desktop user resizes window, or mobile user
 ;; rotates the device
@@ -385,8 +401,7 @@
 
 (defn thread-pane
   []
-  (let [m @(rf/subscribe [:thread])]
-    (render-thread m)))
+  (render-thread @(rf/subscribe [:thread-message-ids])))
 
 (defn menu [title & items]
   [:div.titleblock {}
