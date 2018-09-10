@@ -45,6 +45,7 @@
   :initialize
   (fn [_ _]
     {:search-term ""
+;     :tag-popup true
      :suggestions []
      }))
 
@@ -178,9 +179,19 @@
     (:show-suggestions db)))
 
 (rf/reg-sub
+  :tag-popup
+  (fn [db _]
+    (:tag-popup db)))
+
+(rf/reg-sub
   :suggestions
   (fn [db _]
     (:suggestions db)))
+
+(rf/reg-sub
+ :tags
+ (fn [_ _]
+   #{"unread" "spam" "inbox" "work" "social" "notmuch-list" "nix-list"}))
 
 (rf/reg-sub
   :search-result
@@ -303,7 +314,8 @@
   [:div {} [:pre (:content p)]])
 
 ;; FIXME Probably we should do HTML parsing when the message is fetched, not every time
-;; we render it.
+;; we render it. On the other hand, presumably we will only call this method when
+;; the underlying data has changed
 
 (defmethod render-message-part "text/html" [m p]
   (let [[_ attrs & content]  (hiccup/parse-html (:content p))]
@@ -356,6 +368,30 @@
         :title address}
        (:name parsed)])))
 
+(defn tag-editor-popup
+  []
+  [:div {:style {:position "relative"}}
+   [:div {:style {:background "#ded"
+                  :top "10px"
+                  :left "10px"
+                  :position "absolute"}}
+    [:div {:style {:background-color "#aca"}} "Set tags"]
+    (into
+     [:ul {:style {:margin "0px" :padding "12px"
+                   :list-style-type "none"}}
+      [:li {:style {:margin "6px 0"}}
+       [:input
+        {:style {:width "10em"}
+         :placeholder "Start typing"
+         :onBlur #(println (-> % .-target .-value))}]]]
+     (map (fn [tag]
+            [:li {:style {:position "relative"}}
+             tag
+             [:input {:type "checkbox" :value tag
+                      :style {:position "absolute" :right 4}
+                      :on-change #(println tag)
+                      :checked true}]])
+          @(rf/subscribe [:tags])))]])
 
 (defn render-message [message-id index]
   (let [m @(rf/subscribe [:message message-id])]
@@ -371,7 +407,9 @@
         [:div (:Date h)]
         (into [:div.tags.headers {}]
               (map #(el-for-tag % (fn [e]  (rf/dispatch [:remove-tag index %])))
-                   (:tags m)))])
+                   (:tags m)))
+        (if @(rf/subscribe [:tag-popup])
+          (tag-editor-popup ))])
      (into [:div.message-body {}] (map (partial render-message-part m) (:body m)))]))
 
 (defn render-thread [message-ids]
@@ -456,7 +494,7 @@
 (defn ui
   []
   (if @(rf/subscribe [:thread])
-    (thread-page)
+    [thread-page]
     (search-page)))
 
 
