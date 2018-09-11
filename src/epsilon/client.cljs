@@ -6,8 +6,8 @@
             [clojure.string :as str]
             [epsilon.hiccup :as hiccup]
             [epsilon.icons.chevrons-left]
-            [epsilon.icons.refresh-cw]
             [epsilon.icons.delete]
+            [epsilon.icons.refresh-cw]
             [epsilon.icons.search]
             [epsilon.icons.tag]
             [epsilon.icons.user]
@@ -45,7 +45,6 @@
   :initialize
   (fn [_ _]
     {:search-term ""
-;     :tag-popup true
      :suggestions []
      }))
 
@@ -123,17 +122,21 @@
                  :on-failure      [:thread-retrieve-failed]}}))
 
 (rf/reg-event-fx
-  :remove-tag
-  (fn [{:keys [db]} [_ index tag]]
-    (let [m (get-in db [:thread index])]
-      (when (get-in m [:tags tag])
-        {:db (update-in db [:thread index :tags] disj tag)
-         :http-xhrio {:method :delete
-                      :uri  (str "/messages/" (js/encodeURIComponent (:id m)) "/tags/" tag)
-                      :format (ajax/url-request-format)
-                      :response-format (ajax/json-response-format {:keywords? true})
-                      :on-success      [:xhr-succeeded]
-                      :on-failure      [:xhr-failed]}}))))
+ :set-tag
+ (fn [{:keys [db]} [_ message-id tag add?]]
+   (let [m (get-in db [:messages message-id])
+         present? (get-in db [:messages message-id :tags tag])
+         r {:uri  (str "/messages/" (js/encodeURIComponent (:id m)) "/tags/" tag)
+            :format (ajax/url-request-format)
+            :response-format (ajax/json-response-format {:keywords? true})
+            :on-success      [:xhr-succeeded]
+            :on-failure      [:xhr-failed]}]
+     (cond (and add? (not present?))
+           {:db (update-in db [:messages message-id :tags] conj tag)
+            :http-xhrio (assoc r :method :put)}
+           (and (not add?) present?)
+           {:db (update-in db [:messages message-id :tags] disj tag)
+            :http-xhrio (assoc r :method :delete)}))))
 
 (rf/reg-event-db
  :xhr-succeeded
@@ -155,9 +158,20 @@
  :thread-retrieved
  (fn [db [_ result]]
    (if result
-     (let [flattened (unnest-thread [] (-> result first first))]
-       (assoc db :thread (mapv #(assoc % :tags (set (:tags %)))  flattened)))
-     (assoc db :thread nil))))
+     (let [flattened (unnest-thread [] (-> result first first))
+           add-tag-info (fn [m]
+                          (assoc m :editing-tags false :tags (set (:tags m))))]
+       (assoc db
+              :messages (reduce (fn [a m] (assoc a (:id m) (add-tag-info m)))
+                                {}
+                                flattened)
+              :thread (map :id flattened)))
+     (assoc db :messages {} :thread nil))))
+
+(rf/reg-event-fx
+  :toggle-editing-tabs
+  (fn [{:keys [db]} [_ id]]
+    {:db (update-in db [:messages id :editing-tags] not)}))
 
 (rf/reg-event-db
  :thread-retrieve-failed
@@ -179,11 +193,6 @@
     (:show-suggestions db)))
 
 (rf/reg-sub
-  :tag-popup
-  (fn [db _]
-    (:tag-popup db)))
-
-(rf/reg-sub
   :suggestions
   (fn [db _]
     (:suggestions db)))
@@ -199,24 +208,14 @@
     (:search-result db)))
 
 (rf/reg-sub
- :thread
+ :thread-message-ids
  (fn [db _]
    (:thread db)))
 
 (rf/reg-sub
- :thread-message-ids
- (fn [_ _]
-   (rf/subscribe [:thread]))
- (fn [thread _]
-   (map :id thread)))
-
-(rf/reg-sub
  :message
- (fn [_ _]
-   (rf/subscribe [:thread]))
- (fn [thread [_ id]]
-   (first (filter (fn [m] (= (:id m) id)) thread))))
-
+ (fn [db [_ id]]
+   (get (:messages db) id)))
 
 (rf/reg-sub
  :thread-subject
@@ -284,9 +283,8 @@
             (html-for-suggestion suggestion)])
          @(rf/subscribe [:suggestions]))]])
 
-(defn el-for-tag
-  ([text] (el-for-tag text nil))
-  ([text onclick] [:div.tag {:on-click onclick} [:span.angle] [:span.name [:span text]]]))
+(defn el-for-tag [text]
+  [:div.tag {} [:span.angle] [:span.name [:span text]]])
 
 (defn search-result
   []
@@ -380,8 +378,7 @@
         :title address}
        (:name parsed)])))
 
-(defn tag-editor-popup
-  []
+(defn tag-editor-popup [m]
   [:div {:style {:position "relative"}}
    [:div {:style {:background "#ded"
                   :top "10px"
@@ -397,18 +394,18 @@
          :placeholder "Start typing"
          :onBlur #(println (-> % .-target .-value))}]]]
      (map (fn [tag]
-            [:li {:style {:position "relative"}}
-             tag
-             [:input {:type "checkbox" :value tag
-                      :style {:position "absolute" :right 4}
-                      :on-change #(println tag)
-                      :checked true}]])
+            (let [present? ((:tags m) tag)]
+              [:li {:style {:position "relative"}}
+               tag
+               [:input {:type "checkbox" :value tag
+                        :style {:position "absolute" :right 4}
+                        :on-change #(rf/dispatch [:set-tag (:id m) tag (not present?)])
+                        :checked present?}]]))
           @(rf/subscribe [:tags])))]])
 
-(defn render-message [message-id index]
+(defn render-message [message-id]
   (let [m @(rf/subscribe [:message message-id])]
     [:div.message {:key (:id m)
-                   :data-num index
                    :data-mid (:id m)}
      (let [h (:headers m)]
        [:div.headers.compact-headers
@@ -417,11 +414,11 @@
          " " r-arrow " "
          (el-for-email-address (:To h))]
         [:div (:Date h)]
-        (into [:div.tags.headers {}]
-              (map #(el-for-tag % (fn [e]  (rf/dispatch [:remove-tag index %])))
-                   (:tags m)))
-        (if @(rf/subscribe [:tag-popup])
-          (tag-editor-popup ))])
+        (into [:div.tags.headers
+               {:on-click #(rf/dispatch [:toggle-editing-tabs message-id])}]
+              (map el-for-tag (:tags m)))
+        (if (:editing-tags m)
+          [tag-editor-popup m])])
      (into [:div.message-body {}] (map (partial render-message-part m) (:body m)))]))
 
 (defn render-thread [message-ids]
@@ -484,7 +481,7 @@
 (defn remove-unread-marks [thread-el]
   (let [message-els (.getElementsByClassName thread-el "message")
         visible-els (filter in-viewport? (array-seq message-els))]
-    (run! #(rf/dispatch [:remove-tag (js/parseInt (.. % -dataset -num)) "unread"])
+    (run! #(rf/dispatch [:set-tag (.. % -dataset -mid) "unread" false])
           visible-els)))
 
 (defn thread-page []
@@ -497,7 +494,8 @@
                     :margin-top "4px" }}
      @(rf/subscribe [:thread-subject])]
     [:div.item.clickable {:key :back :on-click #(rf/dispatch [:thread-retrieved nil])}
-     (merge-attrs epsilon.icons.chevrons-left/svg {:view-box [5 4 18 18] :width 30 :height 30})])
+     (merge-attrs epsilon.icons.chevrons-left/svg
+                  {:view-box [5 4 18 18] :width 30 :height 30})])
    [:div.thread.content
     {:on-scroll #(remove-unread-marks (.-target %))}
     [thread-pane]]])
@@ -505,7 +503,7 @@
 
 (defn ui
   []
-  (if @(rf/subscribe [:thread])
+  (if @(rf/subscribe [:thread-message-ids])
     [thread-page]
     (search-page)))
 

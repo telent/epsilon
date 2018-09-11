@@ -154,8 +154,9 @@
         method (:request-method req)]
     (println [id k v method])
     (cond
-      (and (= method :delete) (= k "tags"))
-      (let [ret (notmuch :tags id {:remove [v]})]
+      (and (= k "tags"))
+      (let [action (get { :delete :remove, :put :add } method)
+            ret (notmuch :tags id {action [v]})]
         (if (zero? (:exit ret))
           (jr (json/generate-string ret))
           (fail (assoc ret :error "notmuch returned non-zero")))))))
