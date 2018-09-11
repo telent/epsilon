@@ -261,6 +261,11 @@
   [:span
    (merge epsilon.icons.tag/svg {:width 18 :height 18}) value])
 
+(defmethod html-for-suggestion "date" [[key value]]
+  (println "date" value)
+  [:span
+   (merge epsilon.icons.calendar/svg {}) value])
+
 (defmethod html-for-suggestion :default [[key value]]
   value)
 
@@ -330,11 +335,10 @@
         :target "_download"} "Download " (:content-type part) " attachment " (:filename part)]])
 
 (defmethod render-message-part "application/octet-stream" [m p]
-  (download-link p (:id m)))
+  [download-link p (:id m)])
 
 (defmethod render-message-part "application/pdf" [m p]
-  (download-link p (:id m)))
-
+  [download-link p (:id m)])
 
 (defmethod render-message-part "multipart/related" [m p]
   (when-let [s (:start p)]
