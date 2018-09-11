@@ -341,6 +341,14 @@
     (println "ignoring start param " s))
   (render-message-part m (first (:content p))))
 
+(defmethod render-message-part "multipart/signed" [m p]
+  ;; The multipart/signed content type contains exactly two body parts.
+  ;; The first body part is the body part over which the digital signature
+  ;; was created, including its MIME headers.  The second body part
+  ;; contains the control information necessary to verify the digital
+  ;; signature.   - RFC 1847
+  (render-message-part m (first (:content p))))
+
 (defmethod render-message-part :default [m p]
   [:div {:key (:id p)} [:pre "mime type " (:content-type p) " not supported"]])
 
