@@ -422,7 +422,7 @@
 
 (defn render-thread [message-ids]
   (into [:div.thread {}]
-        (map render-message message-ids (range))))
+        (map #(vector render-message %1 %2) message-ids (range))))
 
 ;; XXX this may change?  e.g. if desktop user resizes window, or mobile user
 ;; rotates the device
