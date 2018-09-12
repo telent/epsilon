@@ -1,6 +1,6 @@
 (ns epsilon.client
   (:require [reagent.core :as reagent]
-            [ajax.core :as ajax :refer [GET POST]]
+            [ajax.core :as ajax :refer [GET POST ajax-request]]
             [day8.re-frame.http-fx]
             [re-frame.core :as rf]
             [clojure.string :as str]
@@ -82,6 +82,26 @@
      :on-success      [:new-suggestions-received]
      :on-failure      [:new-suggestions-received-error]}}))
 
+(defn get-tags-from-server [opts]
+  (ajax-request
+   (merge
+    {:method          :get
+     :uri             "/completions"
+     :params 	      {:q "tag:" :limit 10}
+     :format          (ajax/url-request-format)
+     :response-format (ajax/json-response-format {:keywords? true})}
+    opts)))
+
+
+(rf/reg-sub-raw
+ :tags
+ (fn [app-db _]
+   (let  [query-token (get-tags-from-server
+                       {:handler (fn [[ok rsp]] (rf/dispatch [:write-to  [:tags] rsp]))})]
+     (reagent.ratom/make-reaction
+      (fn [] (get-in @app-db [:tags]))
+      :on-dispose #(do (println "terminate-items-query!" query-token)
+                       (rf/dispatch [:cleanup [:tags]]))))))
 
 (rf/reg-event-db
  :show-suggestions
@@ -180,6 +200,18 @@
    (.log js/console error)
    (assoc db :error error)))
 
+(rf/reg-event-fx
+  :write-to
+  (fn [{:keys [db]} [_ path value]]
+    {:db (assoc-in db path value)}))
+
+(rf/reg-event-fx
+  :cleanup
+  (fn [{:keys [db]} arg]
+    (println "dispose" arg)
+    {:db db}))
+
+
 
 ;; -- Domino 4 - Query  -------------------------------------------------------
 
@@ -198,10 +230,6 @@
   (fn [db _]
     (:suggestions db)))
 
-(rf/reg-sub
- :tags
- (fn [_ _]
-   #{"unread" "spam" "inbox" "work" "social" "notmuch-list" "nix-list"}))
 
 (rf/reg-sub
   :search-result
@@ -223,6 +251,13 @@
  (fn [db _]
    (:Subject (:headers (first (:thread db))))))
 
+
+(rf/reg-sub
+ :tag-names
+ (fn [query-v _]
+   [(rf/subscribe [:tags])])
+ (fn [[tags] _]
+   (map second tags)))
 
 
 ;; -- Domino 5 - View Functions ----------------------------------------------
@@ -383,7 +418,7 @@
   [:div {:style {:position "relative"}}
    [:div {:on-click  #(rf/dispatch [:toggle-editing-tabs (:id m)])
           :style {:position "fixed" :top 0 :left 0 :right 0 :bottom 0
-                  :background-color "rgba(50,50,50,0.3)"
+                  :background-color "rgba(50,50,50,0.15)"
                   :z-index 10000}}]
    [:div {:style {:background "#ded"
                   :top "10px"
@@ -407,7 +442,7 @@
                               :width "1em"}}
                 (html-entity (if present? "&#10004" "&nbsp"))]
                tag]))
-          @(rf/subscribe [:tags])))]])
+          @(rf/subscribe [:tag-names])))]])
 
 (defn render-message [message-id]
   (let [m @(rf/subscribe [:message message-id])]
