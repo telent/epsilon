@@ -5,6 +5,7 @@
             [re-frame.core :as rf]
             [clojure.string :as str]
             [epsilon.hiccup :as hiccup]
+            [epsilon.icons.calendar]
             [epsilon.icons.chevrons-left]
             [epsilon.icons.delete]
             [epsilon.icons.refresh-cw]
