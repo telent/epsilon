@@ -380,9 +380,14 @@
 
 (defn tag-editor-popup [m]
   [:div {:style {:position "relative"}}
+   [:div {:on-click  #(rf/dispatch [:toggle-editing-tabs (:id m)])
+          :style {:position "fixed" :top 0 :left 0 :right 0 :bottom 0
+                  :background-color "rgba(50,50,50,0.3)"
+                  :z-index 10000}}]
    [:div {:style {:background "#ded"
                   :top "10px"
                   :left "10px"
+                  :z-index 20001
                   :position "absolute"}}
     [:div {:style {:background-color "#aca"}} "Set tags"]
     (into
@@ -395,12 +400,12 @@
          :onBlur #(println (-> % .-target .-value))}]]]
      (map (fn [tag]
             (let [present? ((:tags m) tag)]
-              [:li {:style {:position "relative"}}
-               tag
-               [:input {:type "checkbox" :value tag
-                        :style {:position "absolute" :right 4}
-                        :on-change #(rf/dispatch [:set-tag (:id m) tag (not present?)])
-                        :checked present?}]]))
+              [:li {:style {:position "relative"}
+                    :on-click #(rf/dispatch [:set-tag (:id m) tag (not present?)])}
+               [:div {:style {:display "inline-block"
+                              :width "1em"}}
+                (html-entity (if present? "&#10004" "&nbsp"))]
+               tag]))
           @(rf/subscribe [:tags])))]])
 
 (defn render-message [message-id]
@@ -416,7 +421,8 @@
         [:div (:Date h)]
         (into [:div.tags.headers
                {:on-click #(rf/dispatch [:toggle-editing-tabs message-id])}]
-              (map el-for-tag (:tags m)))
+              (conj (map el-for-tag (:tags m))
+                    (el-for-tag [:i "+ add tag"])))
         (if (:editing-tags m)
           [tag-editor-popup m])])
      (into [:div.message-body {}] (map (partial render-message-part m) (:body m)))]))
