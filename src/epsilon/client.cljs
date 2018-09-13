@@ -72,15 +72,7 @@
 (rf/reg-event-fx
  :search-term-updated
  (fn [{:keys [db]} [_ term]]
-   {:db (-> db (assoc :search-term term))
-    :http-xhrio
-    {:method          :get
-     :uri             "/completions"
-     :params 	        {:q term :limit 10}
-     :format          (ajax/url-request-format)
-     :response-format (ajax/json-response-format {:keywords? true})
-     :on-success      [:new-suggestions-received]
-     :on-failure      [:new-suggestions-received-error]}}))
+   {:db (assoc db :search-term term)}))
 
 (defn ajax-cancel [rq]
 #_  (println "cancel ajax request (ignoring) " rq))
@@ -101,16 +93,7 @@
    (.log js/console error)
    (assoc db :search-error error)))
 
-(rf/reg-event-db
- :new-suggestions-received
- (fn [db [_ result]]
-   (assoc db :suggestions result)))
 
-(rf/reg-event-db
- :new-suggestions-received-error
- (fn [db [_ err]]
-   (println "suggestions error" err)
-   db))
 
 (rf/reg-event-fx
  :view-thread-requested
@@ -212,12 +195,6 @@
   (fn [db _]
     (:show-suggestions db)))
 
-(rf/reg-sub
-  :suggestions
-  (fn [db _]
-    (conj
-     (:suggestions db)
-     ["date" "yesterday.."])))
 
 (rf/reg-sub
   :search-result
@@ -241,15 +218,30 @@
 
 ;;; external sources
 
-(defn get-tags-from-server [opts]
+;; suggestions handler subscribes to :search-term, when it changes, fires
+;; xhr to /completions and populates [:suggestions]
+
+(defn get-suggestions-from-server [opts]
   (ajax-request
    (merge
     {:method          :get
      :uri             "/completions"
-     :params 	      {:q "tag:" :limit 10}
      :format          (ajax/url-request-format)
      :response-format (ajax/json-response-format {:keywords? true})}
     opts)))
+
+(rf/reg-sub-raw
+ :suggestions
+ (fn [app-db _]
+   (reagent.ratom/reaction
+    (let [rq (get-suggestions-from-server
+              {:params {:q @(rf/subscribe [:search-term]) :limit 10}
+               :handler #(rf/dispatch [:xhr-replied [:suggestions] %])})]
+      (get-in @app-db [:suggestions])))))
+
+
+(defn get-tags-from-server [opts]
+  (get-suggestions-from-server (merge {:params {:q "tag:" :limit 10}} opts)))
 
 (rf/reg-sub-raw
  :tags
@@ -276,7 +268,7 @@
 
 (defn search-term-input
   []
-  (let [term  @(rf/subscribe [:search-term])]
+  (let [term @(rf/subscribe [:search-term])]
     [:div.search-term-input
      [:form {:on-submit
              (fn [e]
@@ -309,7 +301,6 @@
    (merge epsilon.icons.tag/svg {:width 18 :height 18}) value])
 
 (defmethod html-for-suggestion "date" [[key value]]
-  (println "date" value)
   [:span
    (merge epsilon.icons.calendar/svg {}) value])
 
@@ -319,17 +310,18 @@
 (defn suggestions
   []
   [:div.taglist
-   [:ul
-    (map (fn [suggestion]
-           [:li
-            {:key suggestion
-             :on-click
-             (fn [e]
-               (rf/dispatch [:show-suggestions false])
-               (rf/dispatch [:search-requested (urlable-term suggestion) 0]))
-             }
-            (html-for-suggestion suggestion)])
-         @(rf/subscribe [:suggestions]))]])
+   (into [:ul]
+         (map (fn [suggestion]
+                [:li
+                 {:key suggestion
+                  :on-click
+                  (fn [e]
+                    (rf/dispatch [:show-suggestions false])
+                    (rf/dispatch [:search-requested (urlable-term suggestion) 0]))
+                  }
+                 (html-for-suggestion suggestion)])
+              @(rf/subscribe [:suggestions])))])
+
 
 (defn el-for-tag [text]
   [:div.tag {} [:span.angle] [:span.name [:span text]]])
