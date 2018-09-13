@@ -428,6 +428,9 @@
     [:div {:style {:background-color "#aca"}} "Set tags"]
     (into
      [:ul {:style {:margin "0px" :padding "12px"
+                   :height "50vh"
+                   :font-size "110%"
+                   :overflow-y "scroll"
                    :list-style-type "none"}}
       [:li {:style {:margin "6px 0"}}
        [:input
