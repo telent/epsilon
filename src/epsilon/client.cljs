@@ -82,26 +82,8 @@
      :on-success      [:new-suggestions-received]
      :on-failure      [:new-suggestions-received-error]}}))
 
-(defn get-tags-from-server [opts]
-  (ajax-request
-   (merge
-    {:method          :get
-     :uri             "/completions"
-     :params 	      {:q "tag:" :limit 10}
-     :format          (ajax/url-request-format)
-     :response-format (ajax/json-response-format {:keywords? true})}
-    opts)))
-
-
-(rf/reg-sub-raw
- :tags
- (fn [app-db _]
-   (let  [query-token (get-tags-from-server
-                       {:handler (fn [[ok rsp]] (rf/dispatch [:write-to  [:tags] rsp]))})]
-     (reagent.ratom/make-reaction
-      (fn [] (get-in @app-db [:tags]))
-      :on-dispose #(do (println "terminate-items-query!" query-token)
-                       (rf/dispatch [:cleanup [:tags]]))))))
+(defn ajax-cancel [rq]
+#_  (println "cancel ajax request (ignoring) " rq))
 
 (rf/reg-event-db
  :show-suggestions
@@ -201,19 +183,24 @@
    (assoc db :error error)))
 
 (rf/reg-event-fx
-  :write-to
-  (fn [{:keys [db]} [_ path value]]
-    {:db (assoc-in db path value)}))
+  :xhr-replied
+  (fn [{:keys [db]} [_ path [ok? value]]]
+    ;; maybe in the future this would delegate to a multimethod,
+    ;; if different endpoints require different db merge strategies
+    {:db (if ok?
+           (assoc-in db path value)
+           (assoc db :network-error {:response value}))}))
 
 (rf/reg-event-fx
-  :cleanup
-  (fn [{:keys [db]} arg]
-    (println "dispose" arg)
-    {:db db}))
+  :xhr-finished
+  (fn [{:keys [db]} [_ path]]
+    {:db (assoc-in db path nil)}))
 
 
 
 ;; -- Domino 4 - Query  -------------------------------------------------------
+
+;;; basic accessors
 
 (rf/reg-sub
   :search-term
@@ -228,8 +215,9 @@
 (rf/reg-sub
   :suggestions
   (fn [db _]
-    (:suggestions db)))
-
+    (conj
+     (:suggestions db)
+     ["date" "yesterday.."])))
 
 (rf/reg-sub
   :search-result
@@ -251,6 +239,30 @@
  (fn [db _]
    (:Subject (:headers (first (:thread db))))))
 
+;;; external sources
+
+(defn get-tags-from-server [opts]
+  (ajax-request
+   (merge
+    {:method          :get
+     :uri             "/completions"
+     :params 	      {:q "tag:" :limit 10}
+     :format          (ajax/url-request-format)
+     :response-format (ajax/json-response-format {:keywords? true})}
+    opts)))
+
+(rf/reg-sub-raw
+ :tags
+ (fn [app-db _]
+   (let  [rq (get-tags-from-server
+              {:handler #(rf/dispatch [:xhr-replied [:tags] %])})]
+     (reagent.ratom/make-reaction
+      (fn [] (get-in @app-db [:tags]))
+      :on-dispose #(do (ajax-cancel rq)
+                       (rf/dispatch [:xhr-finished [:tags]]))))))
+
+
+;;; derived queries
 
 (rf/reg-sub
  :tag-names
