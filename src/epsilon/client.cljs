@@ -463,7 +463,13 @@
         {:style {:width "10em"}
          :placeholder "Start typing"
          :on-change #(rf/dispatch [:tag-filter-widget-updated (-> % .-target .-value)])
-         :onBlur #(println (-> % .-target .-value))}]]]
+         :onBlur #(println (-> % .-target .-value))}]]
+      (let [p @(rf/subscribe [:tag-filter-widget])]
+        (if-not (str/blank? p)
+          [:li {:style {:font-size "90%"}
+                :on-click #(do (rf/dispatch [:set-tag (:id m) p true])
+                               (rf/dispatch [:tag-filter-widget-updated ""]))}
+           [:i "new tag " [:b p]]]))]
      (map (fn [tag]
             (let [present? ((:tags m) tag)]
               [:li {:style {:position "relative"}
