@@ -153,21 +153,6 @@
    (.log js/console error)
    (assoc db :error error)))
 
-(rf/reg-event-fx
-  :xhr-replied
-  (fn [{:keys [db]} [_ path [ok? value]]]
-    ;; maybe in the future this would delegate to a multimethod,
-    ;; if different endpoints require different db merge strategies
-    {:db (if ok?
-           (assoc-in db path value)
-           (assoc db :network-error {:response value}))}))
-
-(rf/reg-event-fx
-  :xhr-finished
-  (fn [{:keys [db]} [_ path]]
-    {:db (assoc-in db path nil)}))
-
-
 
 ;; -- Domino 4 - Query  -------------------------------------------------------
 
@@ -206,46 +191,6 @@
 
 ;;; external sources
 
-;; suggestions handler subscribes to :search-widget, when it changes, fires
-;; xhr to /completions and updates a ratom when the results arrive
-
-(defn get-suggestions-from-server [opts]
-  (ajax-request
-   (merge
-    {:method          :get
-     :uri             "/completions"
-     :format          (ajax/url-request-format)
-     :response-format (ajax/json-response-format {:keywords? true})}
-    opts)))
-
-(rf/reg-sub-raw
- :suggestions
- (fn [app-db _]
-   (let [value (reagent/atom [])]
-     (run!
-      (let [term @(rf/subscribe [:search-widget])]
-        (reset! value [])
-        (get-suggestions-from-server
-         {:params {:q term :limit 10}
-          :handler (fn [[ok r]] (reset! value r))})))
-     (reaction @value))))
-
-
-;; similar but just tags - this is for the tag editor popup
-
-(defn get-tags-from-server [opts]
-  (get-suggestions-from-server (merge {:params {:q "tag:" :limit 10}} opts)))
-
-(rf/reg-sub-raw
- :tags
- (fn [app-db _]
-   (let  [rq (get-tags-from-server
-              {:handler #(rf/dispatch [:xhr-replied [:tags] %])})]
-     (reagent.ratom/make-reaction
-      (fn [] (get-in @app-db [:tags]))
-      :on-dispose #(do (ajax-cancel rq)
-                       (rf/dispatch [:xhr-finished [:tags]]))))))
-
 ;; Doing XHR in re-frame without event ping-pong.  I not sure if this
 ;; is a good idea, mostly because surely if it was, someone would have
 ;; written it up already?
@@ -279,6 +224,46 @@
            (get-search-results-from-server
             term (fn [[ok r]] (reset! value r))))))
       (reaction @value))))
+
+;; suggestions handler subscribes to :search-widget, when it changes, fires
+;; xhr to /completions and updates a ratom when the results arrive
+
+(defn get-suggestions-from-server [opts]
+  (ajax-request
+   (merge
+    {:method          :get
+     :uri             "/completions"
+     :format          (ajax/url-request-format)
+     :response-format (ajax/json-response-format {:keywords? true})}
+    opts)))
+
+(rf/reg-sub-raw
+ :suggestions
+ (fn [app-db _]
+   (let [value (reagent/atom [])]
+     (run!
+      (let [term @(rf/subscribe [:search-widget])]
+        (reset! value [])
+        (get-suggestions-from-server
+         {:params {:q term :limit 10}
+          :handler (fn [[ok r]] (reset! value r))})))
+     (reaction @value))))
+
+
+;; similar but just tags - this is for the tag editor popup
+
+(defn get-tags-from-server [opts]
+  (get-suggestions-from-server (merge {:params {:q "tag:" :limit 10}} opts)))
+
+(rf/reg-sub-raw
+ :tags
+ (fn [app-db _]
+   (let [value (reagent/atom [])]
+     (run!
+      (get-tags-from-server
+       {:handler (fn [[ok? rsp]] (and ok? (reset! value rsp)))}))
+     (reaction @value))))
+
 
 ;;; derived queries
 
