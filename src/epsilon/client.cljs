@@ -65,6 +65,11 @@
    {:db (assoc db :search-widget term)}))
 
 (rf/reg-event-fx
+ :tag-filter-widget-updated
+ (fn [{:keys [db]} [_ term]]
+   {:db (assoc db :tag-filter-widget term)}))
+
+(rf/reg-event-fx
  :search-term-zapped
  (fn [{:keys [db]} [_ term]]
    {:db (assoc db :search-widget "" :search-term "")}))
@@ -140,7 +145,8 @@
 (rf/reg-event-fx
   :toggle-editing-tags
   (fn [{:keys [db]} [_ id]]
-    {:db (update-in db [:messages id :editing-tags] not)}))
+    {:db (update-in (assoc db :tag-filter-widget "")
+                    [:messages id :editing-tags] not)}))
 
 (rf/reg-event-db
  :thread-retrieve-failed
@@ -162,6 +168,11 @@
   :search-widget
   (fn [db _]
     (:search-widget db)))
+
+(rf/reg-sub
+  :tag-filter-widget
+  (fn [db _]
+    (:tag-filter-widget db)))
 
 (rf/reg-sub
   :show-suggestions
@@ -265,9 +276,10 @@
 (rf/reg-sub
  :tag-names
  (fn [query-v _]
-   [(rf/subscribe [:tags])])
- (fn [[tags] _]
-   (map second tags)))
+   [(rf/subscribe [:tag-filter-widget])
+    (rf/subscribe [:tags])])
+ (fn [[prefix tags] _]
+   (filter #(str/starts-with? % (or prefix "")) (map second tags))))
 
 
 ;; -- Domino 5 - View Functions ----------------------------------------------
@@ -452,6 +464,7 @@
        [:input
         {:style {:width "10em"}
          :placeholder "Start typing"
+         :on-change #(rf/dispatch [:tag-filter-widget-updated (-> % .-target .-value)])
          :onBlur #(println (-> % .-target .-value))}]]]
      (map (fn [tag]
             (let [present? ((:tags m) tag)]
