@@ -252,22 +252,20 @@
         (reset! value [])
         (get-suggestions-from-server
          {:params {:q term :limit 10}
-          :handler (fn [[ok r]] (reset! value r))})))
+          :handler (fn [[ok? rsp]] (and ok? (reset! value rsp)))})))
      (reaction @value))))
 
 
 ;; similar but just tags - this is for the tag editor popup
-
-(defn get-tags-from-server [opts]
-  (get-suggestions-from-server (merge {:params {:q "tag:" :limit 10}} opts)))
 
 (rf/reg-sub-raw
  :tags
  (fn [app-db _]
    (let [value (reagent/atom [])]
      (run!
-      (get-tags-from-server
-       {:handler (fn [[ok? rsp]] (and ok? (reset! value rsp)))}))
+      (get-suggestions-from-server
+       {:params {:q "tag:" :limit 50}
+        :handler (fn [[ok? rsp]] (and ok? (reset! value rsp)))}))
      (reaction @value))))
 
 
