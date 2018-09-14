@@ -1,5 +1,6 @@
 (ns epsilon.client
   (:require [reagent.core :as reagent]
+            [reagent.ratom :refer [reaction run!]]
             [ajax.core :as ajax :refer [GET POST ajax-request]]
             [day8.re-frame.http-fx]
             [re-frame.core :as rf]
@@ -45,7 +46,8 @@
 (rf/reg-event-db
   :initialize
   (fn [_ _]
-    {:search-term ""
+    {:search-term "tag:inbox"
+     :search-widget "tag:inbox"
      :suggestions []
      }))
 
@@ -55,24 +57,23 @@
     term))
 
 (rf/reg-event-fx
- :search-requested
- (fn [{:keys [db]} [_ term offset]]
-   {:db (-> db (dissoc :show-suggestions :thread-id :thread :search-result))
-    :http-xhrio
-    {:method          :get
-     :uri             "/search"
-     :params 	      {:q term :limit 25}
-     :format          (ajax/url-request-format)
-     :response-format (ajax/json-response-format {:keywords? true})
-     :on-success      [:search-result]
-     :on-failure      [:search-error]}
-    :dispatch [:search-term-updated term]
+ :search-from-widget
+ (fn [{:keys [db]} [_]]
+   {:db (assoc db :search-term (:search-widget db))
     }))
 
+
+
 (rf/reg-event-fx
- :search-term-updated
+ :search-widget-updated
  (fn [{:keys [db]} [_ term]]
-   {:db (assoc db :search-term term)}))
+   {:db (assoc db :search-widget term)}))
+
+(rf/reg-event-fx
+ :search-term-zapped
+ (fn [{:keys [db]} [_ term]]
+   {:db (assoc db :search-widget "" :search-term "")}))
+
 
 (defn ajax-cancel [rq]
 #_  (println "cancel ajax request (ignoring) " rq))
@@ -81,19 +82,6 @@
  :show-suggestions
  (fn [db [_ val]]
    (assoc db :show-suggestions val)))
-
-(rf/reg-event-db
- :search-result
- (fn [db [_ result]]
-   (assoc db :search-result result)))
-
-(rf/reg-event-db
- :search-error
- (fn [db [_ error]]
-   (.log js/console error)
-   (assoc db :search-error error)))
-
-
 
 (rf/reg-event-fx
  :view-thread-requested
@@ -191,15 +179,15 @@
     (:search-term db)))
 
 (rf/reg-sub
+  :search-widget
+  (fn [db _]
+    (:search-widget db)))
+
+(rf/reg-sub
   :show-suggestions
   (fn [db _]
     (:show-suggestions db)))
 
-
-(rf/reg-sub
-  :search-result
-  (fn [db _]
-    (:search-result db)))
 
 (rf/reg-sub
  :thread-message-ids
@@ -218,8 +206,8 @@
 
 ;;; external sources
 
-;; suggestions handler subscribes to :search-term, when it changes, fires
-;; xhr to /completions and populates [:suggestions]
+;; suggestions handler subscribes to :search-widget, when it changes, fires
+;; xhr to /completions and updates a ratom when the results arrive
 
 (defn get-suggestions-from-server [opts]
   (ajax-request
@@ -233,12 +221,17 @@
 (rf/reg-sub-raw
  :suggestions
  (fn [app-db _]
-   (reagent.ratom/reaction
-    (let [rq (get-suggestions-from-server
-              {:params {:q @(rf/subscribe [:search-term]) :limit 10}
-               :handler #(rf/dispatch [:xhr-replied [:suggestions] %])})]
-      (get-in @app-db [:suggestions])))))
+   (let [value (reagent/atom [])]
+     (run!
+      (let [term @(rf/subscribe [:search-widget])]
+        (reset! value [])
+        (get-suggestions-from-server
+         {:params {:q term :limit 10}
+          :handler (fn [[ok r]] (reset! value r))})))
+     (reaction @value))))
 
+
+;; similar but just tags - this is for the tag editor popup
 
 (defn get-tags-from-server [opts]
   (get-suggestions-from-server (merge {:params {:q "tag:" :limit 10}} opts)))
@@ -253,6 +246,27 @@
       :on-dispose #(do (ajax-cancel rq)
                        (rf/dispatch [:xhr-finished [:tags]]))))))
 
+(defn get-search-results-from-server [term handler]
+  (ajax-request
+    {:method          :get
+     :uri             "/search"
+     :params 	      {:q term :limit 25}
+     :format          (ajax/url-request-format)
+     :response-format (ajax/json-response-format {:keywords? true})
+     :handler         handler}))
+
+(rf/reg-sub-raw
+  :search-result
+  (fn [db _]
+    (let [value (reagent/atom [])]
+      (run!
+       (let [term @(rf/subscribe [:search-term])]
+         (when-not (str/blank? term)
+           (reset! value [])
+           (println "here we go again" (pr-str term))
+           (get-search-results-from-server
+            term (fn [[ok r]] (reset! value r))))))
+      (reaction @value))))
 
 ;;; derived queries
 
@@ -268,11 +282,11 @@
 
 (defn search-term-input
   []
-  (let [term @(rf/subscribe [:search-term])]
+  (let [term @(rf/subscribe [:search-widget])]
     [:div.search-term-input
      [:form {:on-submit
              (fn [e]
-               (rf/dispatch [:search-requested term 0])
+               (rf/dispatch [:search-from-widget])
                (.stopPropagation e)
                (.preventDefault e))}
       [:div.widget ;{:style {:position "relative"}}
@@ -280,13 +294,13 @@
                 :placeholder "Search messages"
                 :auto-complete "off"
                 :value term
-                :on-change #(rf/dispatch [:search-term-updated (-> % .-target .-value)])
+                :on-change #(rf/dispatch [:search-widget-updated (-> % .-target .-value)])
                 }]
        [:span {:style {:position "absolute" :top "4px" :right "0.2em"}}
         (merge-attrs
          epsilon.icons.search/svg
          {:style {:color "grey"} :view-box [2 2 24 24] :height 30 :width 30})]]
-      [:span {:on-click #(rf/dispatch [:search-term-updated ""])}
+      [:span {:on-click #(rf/dispatch [:search-widget-updated ""])}
        (html-entity "&nbsp") (html-entity "&nbsp")
        (merge-attrs epsilon.icons.delete/svg {:view-box [0 2 30 20] :height 40 :width 34})
        (html-entity "&nbsp")
@@ -317,7 +331,8 @@
                   :on-click
                   (fn [e]
                     (rf/dispatch [:show-suggestions false])
-                    (rf/dispatch [:search-requested (urlable-term suggestion) 0]))
+                    (rf/dispatch [:search-widget-updated (urlable-term suggestion)])
+                    (rf/dispatch [:search-from-widget]))
                   }
                  (html-for-suggestion suggestion)])
               @(rf/subscribe [:suggestions])))])
@@ -507,7 +522,8 @@
 (defn search-page []
   [:div
    (menu [:span.title "Epsilon"]
-         [:div.item.clickable {:key :home :on-click #(rf/dispatch [:search-term-updated ""])}
+         [:div.item.clickable
+          {:key :home :on-click #(rf/dispatch [:search-term-zapped])}
           (merge-attrs epsilon.logo/svg {:width 30 :height 30})]
          [:div.item.clickable
           {:key :refresh
@@ -521,7 +537,8 @@
       :tabIndex -1
       :on-blur #(do
                   (rf/dispatch [:show-suggestions false])
-                  (println "blurr"))}
+                  (rf/dispatch [:search-from-widget])
+                  (println "blur"))}
      [search-term-input]
      (if @(rf/subscribe [:show-suggestions]) [suggestions])]
     [:div {:id "threads"}
@@ -563,7 +580,8 @@
 (defn ^:export run
   []
   (rf/dispatch-sync [:initialize])     ;; puts a value into application state
-  (rf/dispatch-sync [:search-requested "date:yesterday.." 0])
-;  (rf/dispatch [:view-thread-requested "00000000000067cd"])
+  (rf/dispatch-sync [:search-widget-updated "date:yesterday.."])
+  (rf/dispatch-sync [:search-from-widget])
+;  (rf/dispatch [:view-thread-requested "0000000000007495"])
   (reagent/render [ui]              ;; mount the application's ui into '<div id="app" />'
                   (js/document.getElementById "app")))
