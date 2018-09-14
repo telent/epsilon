@@ -3,11 +3,14 @@
    [aleph.http :as aleph]
    [aleph.netty :as netty]
    [cheshire.core :as json]
+   [clojure.java.io :as io]
    [clojure.java.shell :as shell]
    [clojure.string :as str]
    [ring.util.codec :refer [url-decode]]
    ring.util.response
+   ring.middleware.cookies
    ring.middleware.content-type
+   ring.middleware.params
    )
   (:gen-class))
 
@@ -173,10 +176,33 @@
          ]]
     (first (filter #(.startsWith uri (first %)) handlers))))
 
-(defn handler [req]
-  (println req)
-  (let [[_ h] (handler-by-uri (:uri req))]
-    (h req)))
+
+(def password
+  (-> (shell/sh notmuch-bin "config" "get" "epsilon.password")
+      :out
+      str/trim-newline))
+
+(defn auth-handler [req]
+  (if (and (= (:request-method req) :post)
+           (let [req (ring.middleware.params/params-request req "UTF-8")
+                 pw (get (:params req) "password")]
+             (= pw password)))
+    {:status 302
+     :headers {"location" "/"}
+     :cookies {"password" {:value password}}}
+    {:status 200
+     :headers {"content-type" "text/html"}
+     :body (slurp (io/resource "login.html"))}))
+
+(defn app-handler [req]
+  (let [offered-password (-> req :cookies (get "password") :value)]
+    (if (or (str/blank? password) (= password offered-password))
+      (let [[_ h] (handler-by-uri (:uri req))]
+        (h req))
+      (auth-handler req))))
+
+(def handler (ring.middleware.cookies/wrap-cookies #'app-handler))
+
 
 (defn run [config]
   (let [config (merge {:port 8080} config)]
