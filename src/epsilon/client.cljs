@@ -51,11 +51,6 @@
      :suggestions []
      }))
 
-(defn urlable-term [term]
-  (if (string? (first term))
-    (str (get {"address" "from"} (first term) (first term)) ":" (second term))
-    term))
-
 (rf/reg-event-fx
  :search-from-widget
  (fn [{:keys [db]} [_]]
@@ -317,6 +312,11 @@
 
 (defmethod html-for-suggestion :default [[key value]]
   value)
+
+(defn urlable-term [term]
+  (if (string? (first term))
+    (str (get {"address" "from"} (first term) (first term)) ":" (second term))
+    term))
 
 (defn suggestions
   []
