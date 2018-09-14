@@ -138,7 +138,7 @@
      (assoc db :messages {} :thread nil))))
 
 (rf/reg-event-fx
-  :toggle-editing-tabs
+  :toggle-editing-tags
   (fn [{:keys [db]} [_ id]]
     {:db (update-in db [:messages id :editing-tags] not)}))
 
@@ -432,7 +432,7 @@
 
 (defn tag-editor-popup [m]
   [:div {:style {:position "relative"}}
-   [:div {:on-click  #(rf/dispatch [:toggle-editing-tabs (:id m)])
+   [:div {:on-click  #(rf/dispatch [:toggle-editing-tags (:id m)])
           :style {:position "fixed" :top 0 :left 0 :right 0 :bottom 0
                   :background-color "rgba(50,50,50,0.15)"
                   :z-index 10000}}]
@@ -475,7 +475,7 @@
          (el-for-email-address (:To h))]
         [:div (:Date h)]
         (into [:div.tags.headers
-               {:on-click #(rf/dispatch [:toggle-editing-tabs message-id])}]
+               {:on-click #(rf/dispatch [:toggle-editing-tags message-id])}]
               (conj (map el-for-tag (:tags m))
                     (el-for-tag [:i "+ add tag"])))
         (if (:editing-tags m)
