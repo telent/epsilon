@@ -246,6 +246,18 @@
       :on-dispose #(do (ajax-cancel rq)
                        (rf/dispatch [:xhr-finished [:tags]]))))))
 
+;; Doing XHR in re-frame without event ping-pong.  I not sure if this
+;; is a good idea, mostly because surely if it was, someone would have
+;; written it up already?
+
+;; Basically, this is a reaction that watches :search-term, triggers
+;; a server lookup, and provides changes to its subscriber whenever
+;; the server comes back.  It doesn't update anything in the app-db, because
+;; I'm viewing the server lookup as a computation (albeit a distributed one)
+;; and the app-db is for source data, not for the result of
+;; computations on that data.  It uses run! because ajax-request is async and
+;; the server message comes in a callback not a return value.
+
 (defn get-search-results-from-server [term handler]
   (ajax-request
     {:method          :get
