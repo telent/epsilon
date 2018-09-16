@@ -154,6 +154,11 @@
    (.log js/console error)
    (assoc db :error error)))
 
+(rf/reg-event-db
+ :http-error
+ (fn [db [_ error]]
+   (assoc db :http-error error)))
+
 
 ;; -- Domino 4 - Query  -------------------------------------------------------
 
@@ -195,6 +200,10 @@
  (fn [db _]
    (:Subject (:headers (first (:thread db))))))
 
+(rf/reg-sub
+ :http-error
+ (fn [db _] (:http-error db)))
+
 ;;; external sources
 
 ;; Doing XHR in re-frame without event ping-pong.  I not sure if this
@@ -209,14 +218,24 @@
 ;; computations on that data.  It uses run! because ajax-request is async and
 ;; the server message comes in a callback not a return value.
 
+(defn handle-http-errors [f]
+  (fn [[ok rsp]]
+    ;; not proud of dispatching events here to say it's failed, there should
+    ;; be a better way
+    (rf/dispatch [:http-error nil])
+    (if ok
+      (f rsp)
+      (rf/dispatch [:http-error rsp]))))
+
 (defn get-search-results-from-server [term handler]
   (ajax-request
     {:method          :get
      :uri             "/search"
+     :timeout 5000
      :params 	      {:q term :limit 25}
      :format          (ajax/url-request-format)
      :response-format (ajax/json-response-format {:keywords? true})
-     :handler         handler}))
+     :handler         (handle-http-errors handler)}))
 
 (rf/reg-sub-raw
   :search-result
@@ -227,8 +246,7 @@
          (when-not (str/blank? term)
            (reset! value [])
            (println "here we go again" (pr-str term))
-           (get-search-results-from-server
-            term (fn [[ok r]] (reset! value r))))))
+           (get-search-results-from-server term #(reset! value %)))))
       (reaction @value))))
 
 ;; suggestions handler subscribes to :search-widget, when it changes, fires
@@ -238,6 +256,7 @@
   (ajax-request
    (merge
     {:method          :get
+     :timeout 5000
      :uri             "/completions"
      :format          (ajax/url-request-format)
      :response-format (ajax/json-response-format {:keywords? true})}
@@ -252,7 +271,7 @@
         (reset! value [])
         (get-suggestions-from-server
          {:params {:q term :limit 10}
-          :handler (fn [[ok? rsp]] (and ok? (reset! value rsp)))})))
+          :handler (handle-http-errors #(reset! value %))})))
      (reaction @value))))
 
 
@@ -265,7 +284,7 @@
      (run!
       (get-suggestions-from-server
        {:params {:q "tag:" :limit 50}
-        :handler (fn [[ok? rsp]] (and ok? (reset! value rsp)))}))
+        :handler (handle-http-errors #(reset! value %))}))
      (reaction @value))))
 
 
@@ -543,7 +562,7 @@
           {:key :refresh
            :on-click
            #(rf/dispatch
-             [:search-requested @(rf/subscribe [:search-term])])}
+             [:search-from-widget])}
           (merge-attrs epsilon.icons.refresh-cw.svg {:view-box [0 0 25 25] :width 30 :height 30})])
    [:div.content
     [:div.search
@@ -583,9 +602,22 @@
 
 (defn ui
   []
-  (if @(rf/subscribe [:thread-message-ids])
-    [thread-page]
-    (search-page)))
+  [:div
+   (if-let [err @(rf/subscribe [:http-error])]
+     [:div {:style {:position :fixed
+                    :bottom "3vh" :left "3vw"
+                    :width "88vw"
+                    :background-color "#ee4444"
+                    :color "white"
+                    :z-index 99999
+                    :padding "6px 6px 5px 12px"
+                    :font-height "13px"
+                    :box-shadow "3px 3px 6px black"
+                    }}
+      "ERROR: (" (:status err) ") " (:status-text err)])
+   (if @(rf/subscribe [:thread-message-ids])
+     [thread-page]
+     [search-page])])
 
 
 
