@@ -1,6 +1,6 @@
 (ns epsilon.client
   (:require [reagent.core :as reagent]
-            [reagent.ratom :refer [reaction run!]]
+            [reagent.ratom :as ratom :refer [reaction]]
             [ajax.core :as ajax :refer [GET POST ajax-request]]
             [day8.re-frame.http-fx]
             [re-frame.core :as rf]
@@ -241,7 +241,7 @@
   :search-result
   (fn [db _]
     (let [value (reagent/atom [])]
-      (run!
+      (ratom/run!
        (let [term @(rf/subscribe [:search-term])]
          (when-not (str/blank? term)
            (reset! value [])
@@ -266,7 +266,7 @@
  :suggestions
  (fn [app-db _]
    (let [value (reagent/atom [])]
-     (run!
+     (ratom/run!
       (let [term @(rf/subscribe [:search-widget])]
         (reset! value [])
         (get-suggestions-from-server
@@ -281,7 +281,7 @@
  :tags
  (fn [app-db _]
    (let [value (reagent/atom [])]
-     (run!
+     (ratom/run!
       (get-suggestions-from-server
        {:params {:q "tag:" :limit 50}
         :handler (handle-http-errors #(reset! value %))}))
