@@ -583,6 +583,16 @@
     (run! #(rf/dispatch [:set-tag (.. % -dataset -mid) "unread" false])
           visible-els)))
 
+
+(defn div-thread-content []
+  (reagent/create-class
+   {:component-did-mount (fn [c] (remove-unread-marks (reagent/dom-node c)))
+    :reagent-render
+    (fn []
+      [:div.thread.content
+       {:on-scroll #(remove-unread-marks (.-target %))}
+       [thread-pane]])}))
+
 (defn thread-page []
   [:div
    (menu
@@ -595,9 +605,8 @@
     [:div.item.clickable {:key :back :on-click #(rf/dispatch [:thread-retrieved nil])}
      (merge-attrs epsilon.icons.chevrons-left/svg
                   {:view-box [5 4 18 18] :width 30 :height 30})])
-   [:div.thread.content
-    {:on-scroll #(remove-unread-marks (.-target %))}
-    [thread-pane]]])
+   [div-thread-content]
+   ])
 
 
 (defn ui
