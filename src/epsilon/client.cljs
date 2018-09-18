@@ -7,6 +7,7 @@
             [clojure.string :as str]
             [epsilon.hiccup :as hiccup]
             [epsilon.icons.calendar]
+            [epsilon.icons.cloud-lightning]
             [epsilon.icons.chevrons-left]
             [epsilon.icons.delete]
             [epsilon.icons.refresh-cw]
@@ -157,7 +158,12 @@
 (rf/reg-event-db
  :http-error
  (fn [db [_ error]]
-   (assoc db :http-error error)))
+   (assoc db :http-pending false :http-error error)))
+
+(rf/reg-event-db
+ :http-pending
+ (fn [db [_ pending? ]]
+   (assoc db :http-pending pending? :http-error nil)))
 
 
 ;; -- Domino 4 - Query  -------------------------------------------------------
@@ -204,6 +210,10 @@
  :http-error
  (fn [db _] (:http-error db)))
 
+(rf/reg-sub
+ :http-pending
+ (fn [db _] (:http-pending db)))
+
 ;;; external sources
 
 ;; Doing XHR in re-frame without event ping-pong.  I not sure if this
@@ -218,24 +228,28 @@
 ;; computations on that data.  It uses run! because ajax-request is async and
 ;; the server message comes in a callback not a return value.
 
-(defn handle-http-errors [f]
-  (fn [[ok rsp]]
-    ;; not proud of dispatching events here to say it's failed, there should
-    ;; be a better way
-    (rf/dispatch [:http-error nil])
-    (if ok
-      (f rsp)
-      (rf/dispatch [:http-error rsp]))))
+(defn ajax [opts]
+  (let [h (:success-handler opts)]
+    (println  "pending")
+    (rf/dispatch [:http-pending true])
+    (ajax-request
+     (assoc (dissoc opts :success-handler)
+            :handler (fn [[ok? r]]
+                       (println  "not")
+                       (rf/dispatch [:http-pending false])
+                       (if ok?
+                         (h r)
+                         (rf/dispatch [:http-error r])))))))
 
 (defn get-search-results-from-server [term handler]
-  (ajax-request
+  (ajax
     {:method          :get
      :uri             "/search"
      :timeout 5000
      :params 	      {:q term :limit 25}
      :format          (ajax/url-request-format)
      :response-format (ajax/json-response-format {:keywords? true})
-     :handler         (handle-http-errors handler)}))
+     :success-handler handler}))
 
 (rf/reg-sub-raw
   :search-result
@@ -253,7 +267,7 @@
 ;; xhr to /completions and updates a ratom when the results arrive
 
 (defn get-suggestions-from-server [opts]
-  (ajax-request
+  (ajax
    (merge
     {:method          :get
      :timeout 5000
@@ -271,7 +285,7 @@
         (reset! value [])
         (get-suggestions-from-server
          {:params {:q term :limit 10}
-          :handler (handle-http-errors #(reset! value %))})))
+          :success-handler #(reset! value %)})))
      (reaction @value))))
 
 
@@ -284,7 +298,7 @@
      (ratom/run!
       (get-suggestions-from-server
        {:params {:q "tag:" :limit 50}
-        :handler (handle-http-errors #(reset! value %))}))
+        :success-handler #(reset! value %)}))
      (reaction @value))))
 
 
@@ -550,7 +564,13 @@
 (defn menu [title & items]
   [:div.titleblock {}
    (into [:div.menu {}] items)
-   title])
+   title
+   (and @(rf/subscribe [:http-pending])
+        [:div {:style {:position "fixed" :right "8px" :top "8px"}}
+         (merge-attrs
+          epsilon.icons.cloud-lightning/svg
+          {:style {:color "grey"} :view-box [0 0 24 24] :height 20 :width 20})])])
+
 
 (defn search-page []
   [:div
