@@ -29,43 +29,44 @@ you to add/delete tags on the current message
 ![](doc/tags.png)
 
 
+# Setup
 
-## Building/Installing
+See `INSTALL.md` for installation instructions.
 
-### Quick deployment/dogfood instructions
+## Security
 
-This works for [Nix](https://nixos.org/nix/) users.  If that's not
-you, better instructions will be forthcoming eventually.  Sorry.
+By default Epsilon runs as a web server with the privileges of your
+regular username (in principle you can change this by arranging to
+start it as a less-privileged user, but you will still need to permit
+it to read your mail, so ...)
+
+### Use an SSH tunnel or HTTPS proxy
+
+Epsilon is intended for mobile use so it's unlikely you really want to
+access it only run it on the local machine - but obviously you should
+not connect to it from any other device without considering the
+security implications.
+
+* Android ConnectBot has port forwarding.  Similar options exist for
+  other mobile operating systems, I assume
+* you can put an HTTPS proxy in front of it using stunnel or hitch or
+  even nginx
+
+### Protect against local attackers with a password
+
+If there might be other users on your host machine (legitimate or
+otherwise), there is nothing to stop them from connect to the port you
+started epsilon on.  A rudimentary safeguard is to run
+
+    notnuch config set epsilon.password my-secret-code
+
+which will cause epsilon to prompt you for that code when you visit
+it.  It passes whatever you type in plaintext, so see note above about
+encryption - this is not a substitute for a secure transport layer.
+Quite the opposite.
 
 
-```
-$ nix-env -f 'https://github.com/telent/epsilon/archive/master.tar.gz' -i
-$ epsilon :port 8111
-$ $preferred_web_browser http://localhost:8111
-```
-
-It's unlikely you really want to run it on the local machine, but
-obviously you should not run it on any other machine without
-considering the securoty implications.  Here are some factoids you may
-consider
-
-* Android ConnectBot has port forwarding, or
-* you can put an SSL proxy in front of it using stunnel or hitch or
-  similar
-* if there are or might be other users on your host machine, they will
-  be able to read your mail if they connect to the port you started
-  epsilon on.  A rudimentary safeguard is to run 
-
-```
-notnuch config set epsilon.password my-secret-code
-```
-then it will prompt you for that code when you visit it.  It passes
-whatever you type in plaintext, so see above note about HTTPS.
-
-  
-
-
-### Development environment
+## Developing Epsilon
 
 You will need to have installed:
 
@@ -101,7 +102,7 @@ epsilon.server=> (run {})
 ```
 
 
-## Dependencies
+### Dependencies
 
 Whenever you change `deps.edn`, and assuming you care about building
 the production build with Nix, you will also need to update
