@@ -43,7 +43,7 @@ it to read your mail, so ...)
 ### Use an SSH tunnel or HTTPS proxy
 
 Epsilon is intended for mobile use so it's unlikely you really want to
-access it only run it on the local machine - but obviously you should
+access it only from the machine it's running on - but obviously you should
 not connect to it from any other device without considering the
 security implications.
 
@@ -60,7 +60,7 @@ started epsilon on.  A rudimentary safeguard is to run
 
     notnuch config set epsilon.password my-secret-code
 
-which will cause epsilon to prompt you for that code when you visit
+which will cause Epsilon to prompt you for that code when you visit
 it.  It passes whatever you type in plaintext, so see note above about
 encryption - this is not a substitute for a secure transport layer.
 Quite the opposite.
