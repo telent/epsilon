@@ -1,0 +1,26 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: nixos/nix:latest
+    steps:
+      - restore_cache:
+          keys:
+            - nix-store
+
+      - checkout
+
+      - run:
+          name: Build
+          command: nix-build uberjar.nix
+
+      - run:
+          name: Copy Jar
+          command: mkdir -p /jar && cp result/* /jar
+
+      - save_cache:
+	  key: nix-store
+          paths:
+            - "/nix/store"
+    store_artifacts:
+      path: /jar
