@@ -19,7 +19,7 @@ jobs:
           command: mkdir -p /jar && cp result/* /jar
 
       - save_cache:
-	  key: nix-store
+          key: nix-store
           paths:
             - "/nix/store"
     store_artifacts:
