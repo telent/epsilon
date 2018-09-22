@@ -6,6 +6,10 @@ jobs:
     docker:
       - image: nixos/nix:latest
     steps:
+      - run:
+          name: print env
+          command: printenv |sort
+          
       - restore_cache:
           keys:
             - nix-store
