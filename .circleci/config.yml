@@ -22,5 +22,5 @@ jobs:
           key: nix-store
           paths:
             - "/nix/store"
-    store_artifacts:
-      path: /jar
+      - store_artifacts:
+          path: /jar
