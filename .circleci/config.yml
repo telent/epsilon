@@ -1,6 +1,8 @@
 version: 2
 jobs:
   build:
+    environemnt:
+      SSL_CERT_FILE: /root/.nix-profile/etc/ssl/certs/ca-bundle.crt
     docker:
       - image: nixos/nix:latest
     steps:
