@@ -655,7 +655,7 @@
 (defn ^:export run
   []
   (rf/dispatch-sync [:initialize])     ;; puts a value into application state
-  (rf/dispatch-sync [:search-widget-updated "date:yesterday.."])
+  (rf/dispatch-sync [:search-widget-updated "tag:inbox"])
   (rf/dispatch-sync [:search-from-widget])
 ;  (rf/dispatch [:view-thread-requested "0000000000007495"])
   (reagent/render [ui]              ;; mount the application's ui into '<div id="app" />'
